@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="drawButton">
+   <widget class="QPushButton" name="draw_button">
     <property name="geometry">
      <rect>
       <x>300</x>
@@ -27,7 +27,7 @@
      <string>DRAW</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="callButton">
+   <widget class="QPushButton" name="call_button">
     <property name="geometry">
      <rect>
       <x>400</x>
@@ -40,12 +40,12 @@
      <string>CALL</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="sortButton">
+   <widget class="QPushButton" name="sort_button">
     <property name="geometry">
      <rect>
-      <x>660</x>
-      <y>330</y>
-      <width>75</width>
+      <x>650</x>
+      <y>310</y>
+      <width>81</width>
       <height>23</height>
      </rect>
     </property>
@@ -53,7 +53,7 @@
      <string>Sort</string>
     </property>
    </widget>
-   <widget class="QLabel" name="domImg">
+   <widget class="QLabel" name="dom_img">
     <property name="geometry">
      <rect>
       <x>40</x>
@@ -70,7 +70,7 @@
      <string>DomImg</string>
     </property>
    </widget>
-   <widget class="QLabel" name="teamImg">
+   <widget class="QLabel" name="team_img">
     <property name="geometry">
      <rect>
       <x>100</x>
@@ -116,7 +116,10 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QFrame" name="nameFrame">
+   <widget class="QFrame" name="name_frame">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>270</x>
@@ -134,7 +137,7 @@
     <property name="frameShadow">
      <enum>QFrame::Raised</enum>
     </property>
-    <widget class="QLabel" name="nameLabel">
+    <widget class="QLabel" name="name_label">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -156,7 +159,7 @@
       <string>Name:</string>
      </property>
     </widget>
-    <widget class="QLineEdit" name="nameEntry">
+    <widget class="QLineEdit" name="name_entry">
      <property name="geometry">
       <rect>
        <x>80</x>
@@ -175,7 +178,7 @@
 background-color: rgb(255, 255, 255);</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="nameSubmit">
+    <widget class="QPushButton" name="name_submit">
      <property name="geometry">
       <rect>
        <x>190</x>
@@ -198,6 +201,192 @@ background-color: rgb(255, 238, 175);</string>
       <string>Submit</string>
      </property>
     </widget>
+   </widget>
+   <widget class="QCheckBox" name="sort_checkbox">
+    <property name="geometry">
+     <rect>
+      <x>660</x>
+      <y>340</y>
+      <width>70</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>AutoSort</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="p2_label">
+    <property name="geometry">
+     <rect>
+      <x>350</x>
+      <y>70</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>?</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="p3_label">
+    <property name="geometry">
+     <rect>
+      <x>700</x>
+      <y>200</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>?</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="p1_label">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>200</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>?</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="done_button">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>350</x>
+      <y>200</y>
+      <width>81</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>DONE</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="play_button">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>350</x>
+      <y>200</y>
+      <width>81</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>PLAY</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="message_label">
+    <property name="geometry">
+     <rect>
+      <x>290</x>
+      <y>200</y>
+      <width>200</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(185, 252, 255);
+border: 1px solid black</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="score_button">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>310</x>
+      <y>230</y>
+      <width>81</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>SCORE</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="burn_button">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>230</y>
+      <width>81</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>BURN</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="points_label">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>80</y>
+      <width>71</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>120/120</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="startButton">
+   <widget class="QPushButton" name="start_button">
     <property name="geometry">
      <rect>
       <x>100</x>
@@ -32,7 +32,7 @@
      <string>Start</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="stopButton">
+   <widget class="QPushButton" name="stop_button">
     <property name="geometry">
      <rect>
       <x>200</x>
@@ -79,7 +79,7 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QLabel" name="addressLabel">
+   <widget class="QLabel" name="address_label">
     <property name="geometry">
      <rect>
       <x>60</x>
@@ -100,7 +100,7 @@
      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
     </property>
    </widget>
-   <widget class="QLabel" name="portLabel">
+   <widget class="QLabel" name="port_label">
     <property name="geometry">
      <rect>
       <x>200</x>
@@ -118,7 +118,7 @@
      <string>Port: XXXX</string>
     </property>
    </widget>
-   <widget class="QLabel" name="clientsLabel">
+   <widget class="QLabel" name="clients_label">
     <property name="geometry">
      <rect>
       <x>90</x>
@@ -139,7 +139,7 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QScrollArea" name="clientsArea">
+   <widget class="QScrollArea" name="clients_area">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -160,17 +160,20 @@
        <height>129</height>
       </rect>
      </property>
-     <widget class="QLabel" name="clientsList">
+     <widget class="QLabel" name="clients_list">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>51</width>
-        <height>16</height>
+        <width>351</width>
+        <height>111</height>
        </rect>
       </property>
       <property name="text">
        <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
       </property>
      </widget>
     </widget>
