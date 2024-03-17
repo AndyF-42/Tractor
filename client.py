@@ -133,7 +133,6 @@ class UI(QMainWindow):
             card.setVisible(False)
     
     def clear_hand(self):
-        print("hi")
         for card in self.hand:
             if card.pixmap():
                 card.setPixmap(QPixmap())
