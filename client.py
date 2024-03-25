@@ -489,3 +489,4 @@ sys.exit(app.exec_())
 # 8. Make prettier (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc)
 # 9. Make work across networks (haha i'm gonna kill myself)
 # 10. Fix random crashes
+# 11. Enter IP for client

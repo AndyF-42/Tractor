@@ -5,6 +5,8 @@ import socket
 import threading
 from time import sleep
 from game import Deck, Card, is_better
+import requests
+import json
 
 
 class UI(QMainWindow):
@@ -27,7 +29,7 @@ def start_server():
     MainWindow.stop_button.setEnabled(True)
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((HOST_ADDR, HOST_PORT))
+    server.bind(("0.0.0.0", HOST_PORT))
     server.listen()  # server is listening for client connection
 
     thread = threading.Thread(target=accept_clients, args=(server,))
@@ -195,8 +197,8 @@ MainWindow = UI()
 MainWindow.setWindowTitle("Tractor Server")
 
 server = None
-HOST_ADDR = socket.gethostbyname(socket.gethostname())
-HOST_PORT = 5050
+with open("secrets.json", "r") as secrets:
+    HOST_ADDR, HOST_PORT = json.load(secrets).values()
 clients = []
 caller = None
 clients_names = []
