@@ -1,5 +1,3 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton
-from PyQt5 import uic
 import sys
 import socket
 import threading
@@ -8,34 +6,19 @@ from game import Deck, Card, is_better
 import json
 
 
-class UI(QMainWindow):
-    def __init__(self):
-        super(UI, self).__init__()
-
-        uic.loadUi("server.ui", self)
-
-        self.start_button.clicked.connect(start_server)
-        self.stop_button.clicked.connect(stop_server)
-
-        self.show()
-
 
 # Start server function
 def start_server():
     global server
 
-    MainWindow.start_button.setEnabled(False)
-    MainWindow.stop_button.setEnabled(True)
-
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("0.0.0.0", HOST_PORT))
+    server.bind((HOST_ADDR, HOST_PORT))
     server.listen()  # server is listening for client connection
 
     thread = threading.Thread(target=accept_clients, args=(server,))
     thread.start()
 
-    MainWindow.address_label.setText("Address: " + HOST_ADDR)
-    MainWindow.port_label.setText("Port: " + str(HOST_PORT))
+    print(f"Server listening on address {HOST_ADDR} and port {HOST_PORT}")
 
 
 # Stop server function
@@ -51,11 +34,6 @@ def stop_server():
     update_clients(clients_names)
 
     player_data = []
-    MainWindow.address_label.setText("Address: X.X.X.X")
-    MainWindow.port_label.setText("Port: XXXX")
-
-    MainWindow.start_button.setEnabled(True)
-    MainWindow.stop_button.setEnabled(False)
 
 
 # Accept clients to server
@@ -190,10 +168,6 @@ def update_clients(names):
     MainWindow.clients_list.setText("\n".join(names))
 
 
-
-app = QApplication(sys.argv)
-MainWindow = UI()
-MainWindow.setWindowTitle("Tractor Server")
 
 server = None
 with open("secrets.json", "r") as secrets:
