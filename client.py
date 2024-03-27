@@ -8,6 +8,7 @@ import threading
 from game import Card, set_dominant, tractor_sorted, valid_play
 from time import sleep
 from functools import partial
+import json
 
 
 class UI(QMainWindow):
@@ -444,13 +445,14 @@ def burn():
 
 
 
+HOST_ADDR = input("Host IP address: ")
+HOST_PORT = int(input("Host port: "))
+
 app = QApplication(sys.argv)
 MainWindow = UI()
 MainWindow.setWindowTitle("Tractor Client")
 
 client = None
-HOST_ADDR = socket.gethostbyname(socket.gethostname())
-HOST_PORT = 5050
 
 your_name = ""
 opponents = {
@@ -475,18 +477,7 @@ sys.exit(app.exec_())
 
 # NEXT STEPS
 # ----------
-# 1. DONE Fix game breaking if nobody calls until all cards dealt
-# 2. DONE Start game (make play button visible)
-# 3. DONE Send message for cards someone played and then when its your turn
-# 4. DONE Figure out when a round is over (keep track of starter?) and see who won
-# 5. DONE Let winner be able to add to pot (maybe just a button for "score" and "dont score", and add warning if doing something for wrong team)
-        # DONE need thing for wrong team
-        # cards on right side are buggy
-        # DONE reposition score and burn buttons
-        # DONE dont ask if no points
-# 6. DONE Clear cards and let winner go first
-# 7. Winning the game (check points, check no cards left, if no cards check buried, etc.)
-# 8. Make prettier (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc)
-# 9. Make work across networks (haha i'm gonna kill myself)
-# 10. Fix random crashes
-# 11. Enter IP for client
+# 1. Winning the game (check points, check no cards left, if no cards check buried, etc.)
+# 2. Prettier UI (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc.)
+# 3. Cleaner sockets (race conditions, clean exits, etc.)
+# 4. Other random crashes
