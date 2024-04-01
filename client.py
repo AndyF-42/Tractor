@@ -1,21 +1,104 @@
-from re import M
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, QMessageBox, QLabel, QSizePolicy
+from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, QMessageBox, QLabel, QWidget, QFrame, QCheckBox
 from PyQt5.QtGui import QPixmap
-from PyQt5 import uic
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5 import QtGui
 import sys
 import socket
 import threading
 from game import Card, set_dominant, tractor_sorted, valid_play
-from time import sleep
+import time
 from functools import partial
-import json
 
 
 class UI(QMainWindow):
     def __init__(self):
         super(UI, self).__init__()
 
-        uic.loadUi("client.ui", self)
+        #--- PYQT5 CODE ---#
+        self.setWindowTitle("MainWindow")
+        self.setGeometry(0, 0, 800, 648)
+
+        self.centralwidget = QWidget(self)
+        self.setCentralWidget(self.centralwidget)
+
+        self.draw_button = QPushButton("DRAW", self.centralwidget)
+        self.draw_button.setGeometry(300, 200, 81, 71)
+
+        self.call_button = QPushButton("CALL", self.centralwidget)
+        self.call_button.setGeometry(400, 200, 81, 71)
+
+        self.sort_button = QPushButton("Sort", self.centralwidget)
+        self.sort_button.setGeometry(650, 310, 81, 23)
+
+        self.dom_img = QLabel("DomImg", self.centralwidget)
+        self.dom_img.setGeometry(40, 80, 51, 41)
+        self.dom_img.setStyleSheet("border: 1px solid black")
+
+        self.team_img = QLabel("TeamImg", self.centralwidget)
+        self.team_img.setGeometry(100, 80, 51, 41)
+        self.team_img.setStyleSheet("border: 1px solid black")
+
+        self.title = QLabel("Tractor", self.centralwidget)
+        self.title.setGeometry(-20, 0, 831, 51)
+        self.title.setStyleSheet("background-color: rgb(0, 170, 255);")
+        self.title.setAlignment(Qt.AlignCenter)
+        self.title.setFont(QtGui.QFont("Arial", 24, QtGui.QFont.Bold))
+
+        self.name_frame = QFrame(self.centralwidget)
+        self.name_frame.setGeometry(270, 80, 271, 51)
+        self.name_frame.setStyleSheet("background-color: rgb(185, 252, 255);")
+
+        self.name_label = QLabel("Name:", self.name_frame)
+        self.name_label.setGeometry(10, 10, 101, 31)
+        self.name_label.setFont(QtGui.QFont("Segoe UI Semilight", 16))
+
+        self.name_entry = QLineEdit(self.name_frame)
+        self.name_entry.setGeometry(80, 10, 101, 31)
+        self.name_entry.setStyleSheet("background-color: rgb(255, 255, 255);")
+
+        self.name_submit = QPushButton("Submit", self.name_frame)
+        self.name_submit.setGeometry(190, 10, 71, 31)
+        self.name_submit.setStyleSheet("background-color: rgb(255, 238, 175); font: 10pt 'Segoe UI Semilight';")
+
+        self.sort_checkbox = QCheckBox("AutoSort", self.centralwidget)
+        self.sort_checkbox.setGeometry(660, 340, 70, 17)
+
+        self.p2_label = QLabel("?", self.centralwidget)
+        self.p2_label.setGeometry(350, 70, 81, 31)
+        self.p2_label.setFont(QtGui.QFont("Arial", 10))
+
+        self.p3_label = QLabel("?", self.centralwidget)
+        self.p3_label.setGeometry(700, 200, 81, 31)
+        self.p3_label.setFont(QtGui.QFont("Arial", 10))
+
+        self.p1_label = QLabel("?", self.centralwidget)
+        self.p1_label.setGeometry(20, 200, 81, 31)
+        self.p1_label.setFont(QtGui.QFont("Arial", 10))
+
+        self.done_button = QPushButton("DONE", self.centralwidget)
+        self.done_button.setGeometry(350, 200, 81, 71)
+
+        self.play_button = QPushButton("PLAY", self.centralwidget)
+        self.play_button.setGeometry(350, 200, 81, 71)
+        self.play_button.setEnabled(False)
+
+        self.message_label = QLabel("", self.centralwidget)
+        self.message_label.setGeometry(290, 200, 200, 30)
+        self.message_label.setStyleSheet("background-color: rgb(185, 252, 255); border: 1px solid black")
+        self.message_label.setAlignment(Qt.AlignCenter)
+        self.message_label.setFont(QtGui.QFont("Arial", 12))
+
+        self.score_button = QPushButton("SCORE", self.centralwidget)
+        self.score_button.setGeometry(310, 230, 81, 71)
+
+        self.burn_button = QPushButton("BURN", self.centralwidget)
+        self.burn_button.setGeometry(390, 230, 81, 71)
+
+        self.points_label = QLabel("120/120", self.centralwidget)
+        self.points_label.setGeometry(160, 80, 71, 41)
+        self.points_label.setFont(QtGui.QFont("Arial", 12))
+        self.points_label.setAlignment(Qt.AlignCenter)
+        #--- PYQT5 CODE ---#
 
         question = QPixmap("images/questionMark.png").scaledToHeight(64)
         self.dom_img.setPixmap(question)
@@ -25,7 +108,7 @@ class UI(QMainWindow):
         self.team_img.setPixmap(question)
         self.team_img.resize(question.width(), question.height())
         
-        self.name_submit.clicked.connect(setup)
+        self.name_submit.clicked.connect(self.setup)
         self.draw_button.clicked.connect(draw)
         self.call_button.clicked.connect(call)
         self.sort_button.clicked.connect(sort)
@@ -52,15 +135,15 @@ class UI(QMainWindow):
 
         self.card_map = {} # maps the card label to the Card object 
 
-        self.hand = [QLabel(self) for _ in range(25)]
+        self.hand = [QLabel(self.centralwidget) for _ in range(25)]
         for c in self.hand:
             c.mousePressEvent = partial(self.click, c)
 
-        self.p1_cards = [QLabel(self) for _ in range(4)]
-        self.p2_cards = [QLabel(self) for _ in range(4)]
-        self.p3_cards = [QLabel(self) for _ in range(4)]
-        self.my_cards = [QLabel(self) for _ in range(4)]
-        self.pot_cards = [QLabel(self) for _ in range(8)]
+        self.p1_cards = [QLabel(self.centralwidget) for _ in range(4)]
+        self.p2_cards = [QLabel(self.centralwidget) for _ in range(4)]
+        self.p3_cards = [QLabel(self.centralwidget) for _ in range(4)]
+        self.my_cards = [QLabel(self.centralwidget) for _ in range(4)]
+        self.pot_cards = [QLabel(self.centralwidget) for _ in range(8)]
         for c in self.pot_cards:
             c.mousePressEvent = partial(self.click, c)
 
@@ -95,6 +178,7 @@ class UI(QMainWindow):
     # draw cards of height height onto the UI from Card list cards,
     # starting at tuple start (x, y), spaced by spacing
     def show_cards(self, cards, height, start, spacing):
+        print("started show_cards")
         my_source = self.hand
         if start == (120, 200): my_source = self.p1_cards
         elif start == (350, 100): my_source = self.p2_cards
@@ -103,6 +187,7 @@ class UI(QMainWindow):
         elif start == (265, 300): my_source = self.pot_cards
 
         for i, card in enumerate(cards):
+            print(f"showing card: {card.rank} of {card.suit}")
             label = my_source[i]
             label.move(int(start[0] + i * spacing), start[1])
             pixmap = QPixmap("images/cards/" + card.file_name()).scaledToHeight(height)
@@ -110,16 +195,20 @@ class UI(QMainWindow):
             label.resize(pixmap.width(), pixmap.height())
             label.show()
             self.card_map[label] = card
+            print("finished that card")
+        print("finished show_cards")
     
     # do some math to measure a good placement for hand
     def update_hand(self, cards):
+        print("started update_hand")
         global selected
         self.clear_hand()
         selected = []
         length = len(cards)
         spacing = 50 - length
-        x = (665 - spacing * (length-1)) / 2
+        x = int((665 - spacing * (length-1)) // 2)
         self.show_cards(cards, 192, (x, 424), spacing)
+        print("finished update_hand")
 
     # clear any cards people placed down
     def clear_cards(self):
@@ -134,51 +223,65 @@ class UI(QMainWindow):
             card.setVisible(False)
     
     def clear_hand(self):
+        print("started clear_hand")
         for card in self.hand:
             if card.pixmap():
                 card.setPixmap(QPixmap())
+        print("finished clear_hand")
 
-
-
-def setup():
-    global your_name
-    name = MainWindow.name_entry.text()
-    if len(name) < 1 or len(name) > 11 or "-" in name or name.strip() == "You":
-        bad_name = QMessageBox()
-        bad_name.setIcon(QMessageBox.Critical)
-        bad_name.setWindowTitle("Bad Name")
-        if len(name) < 1:
-            bad_name.setText("You need to set a name first!")
-        elif "-" in name:
-            bad_name.setText("Invalid character \"-\" in name")
-        elif name.strip() == "You":
-            bad_name.setText("Fuck off. You're not cute.")
+    def setup(self):
+        global your_name
+        name = MainWindow.name_entry.text()
+        if len(name) < 1 or len(name) > 11 or "-" in name or name.strip() == "You":
+            bad_name = QMessageBox()
+            bad_name.setIcon(QMessageBox.Critical)
+            bad_name.setWindowTitle("Bad Name")
+            if len(name) < 1:
+                bad_name.setText("You need to set a name first!")
+            elif "-" in name:
+                bad_name.setText("Invalid character \"-\" in name")
+            elif name.strip() == "You":
+                bad_name.setText("Fuck off. You're not cute.")
+            else:
+                bad_name.setText("Name is too long!")
+            bad_name.exec_()
         else:
-            bad_name.setText("Name is too long!")
-        bad_name.exec_()
-    else:
-        your_name = name
-        connect(your_name)
+            your_name = name
+            self.connect(your_name)
+
+    def connect(self, name):
+        global client, HOST_PORT, HOST_ADDR
+        try:
+            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.connect((HOST_ADDR, HOST_PORT))
+            client.send(name.encode('utf-8'))
+            # start a thread to keep receiving message from server
+            # thread = threading.Thread(target=receive, args=(client,))
+            # thread.start()
+            self.receiver = Receiver(client)
+            self.receiver.start()
+            MainWindow.setWindowTitle("Tractor Client - " + name)
+            
+        except socket.error:
+            error = QMessageBox()
+            error.setIcon(QMessageBox.Critical)
+            error.setText("Error: Could not connect to server")
+            error.setWindowTitle("Connection Issue")
+            error.exec_()
 
 
-def connect(name):
-    global client, HOST_PORT, HOST_ADDR
-    try:
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.connect((HOST_ADDR, HOST_PORT))
-        client.send(name.encode('utf-8'))
-        # start a thread to keep receiving message from server
-        thread = threading.Thread(target=receive, args=(client,))
-        thread.start()
+class Receiver(QThread):
+    finished = pyqtSignal()  # Signal to indicate that the work is finished
 
-        MainWindow.setWindowTitle("Tractor Client - " + name)
-    except socket.error:
-        error = QMessageBox()
-        error.setIcon(QMessageBox.Critical)
-        error.setText("Error: Could not connect to server")
-        error.setWindowTitle("Connection Issue")
-        error.exec_()
+    def __init__(self, client):
+        super().__init__()
+        self.client = client
 
+    def run(self):
+        # Put your task code here
+        receive(self.client)
+        self.finished.emit()
+        
 
 def receive(sock):
     global your_name, opponents, MainWindow, SPEED_DEAL, dom_suit, pot, auto_draw, deal_over, starting_cards, hand
@@ -186,6 +289,7 @@ def receive(sock):
         message = sock.recv(4096).decode('utf-8')
 
         if not message:
+            print("No message")
             break
     
         if message.startswith("welcome"): # welcome-0 for first, or welcome-3-Andy-Dustin-Michael for 3 other ppl or welcome-1-Andy for one other, etc...
@@ -196,7 +300,8 @@ def receive(sock):
             parts = message.split("-")
 
             for i in range(int(parts[1])):
-                MainWindow.findChild(QLabel, "p"+str(3-i)+"_label").setText(parts[-1-i])
+                # MainWindow.findChild(QLabel, "p"+str(3-i)+"_label").setText(parts[-1-i])
+                getattr(MainWindow, "p"+str(3-i)+"_label").setText(parts[-1-i])
                 opponents[parts[-1-i]] = opponents.pop("p"+str(3-i))
 
             MainWindow.title.setText("Waiting for players...")
@@ -205,7 +310,8 @@ def receive(sock):
         elif message.startswith("joined"):  # joined-[my_index]-[newplayer_index]-[name] 
             parts = message.split("-")
             index = int(parts[2]) - int(parts[1])
-            MainWindow.findChild(QLabel, "p"+str(index)+"_label").setText(parts[3])
+            # MainWindow.findChild(QLabel, "p"+str(index)+"_label").setText(parts[3])
+            getattr(MainWindow, "p"+str(index)+"_label").setText(parts[3])
             opponents[parts[3]] = opponents.pop("p"+str(index))
         
         elif message.startswith("start"):
@@ -226,16 +332,17 @@ def receive(sock):
         elif message.startswith("yourturn"):
             MainWindow.draw_button.setEnabled(True)
             if SPEED_DEAL or auto_draw > 0:
-                sleep(0.1)
                 draw()
 
         elif message.startswith("draw"):
             auto_draw -= 1
             message = message.split("-")
             hand.append(Card(message[1], message[2]))
+            print(f"drew {message[1]} of {message[2]}")
             if MainWindow.sort_checkbox.isChecked():
                 sort()
             else:
+                print("UPDATING HAND!")
                 MainWindow.update_hand(hand)
             MainWindow.draw_button.setEnabled(False)
             check_team()
@@ -294,7 +401,7 @@ def receive(sock):
             elif message[1] == "You" and not hand: # NO CARDS LEFT ADD MORE HERE
                 client.send("nocards".encode('utf-8'))
             elif len(message) != 3:
-                sleep(3)
+                time.sleep(3) # TODO - can't sleep like this
                 MainWindow.message_label.setVisible(False)
                 MainWindow.play_button.setEnabled(message[1] == "You")
                 MainWindow.clear_cards()
@@ -309,7 +416,7 @@ def receive(sock):
                 pass
             else:
                 MainWindow.message_label.setText("SCORED" if message[1] == "True" else "BURNED")
-                sleep(3)
+                time.sleep(3) # TODO - can't sleep like this
                 MainWindow.message_label.setVisible(False)
                 MainWindow.play_button.setVisible(True)
                 MainWindow.play_button.setEnabled(len(message) == 4)
@@ -370,6 +477,7 @@ def set_dom():
 
 def check_team():
     global deal_over, side
+    print("checking team")
     team = QPixmap("images/questionMark.png").scaledToHeight(64)
     for card in hand:
         if card.get_rank() == "TEN" and card.get_suit() == dom_suit:
@@ -382,6 +490,7 @@ def check_team():
         side = "attack"
     MainWindow.team_img.setPixmap(team)
     MainWindow.team_img.resize(team.width(), team.height())
+    print("finished check_team")
 
 
 def sort():
@@ -445,8 +554,8 @@ def burn():
 
 
 
-HOST_ADDR = input("Host IP address: ")
-HOST_PORT = int(input("Host port: "))
+HOST_ADDR = "127.0.0.1" # input("Host IP address: ")
+HOST_PORT = 5050 # int(input("Host port: "))
 
 app = QApplication(sys.argv)
 MainWindow = UI()
@@ -466,7 +575,7 @@ selected = []
 pot = []
 dom_suit = ""
 SPEED_DEAL = False
-auto_draw = 0
+auto_draw = 15
 deal_over = False
 starting_cards = []
 
@@ -478,6 +587,10 @@ sys.exit(app.exec_())
 # NEXT STEPS
 # ----------
 # 1. Winning the game (check points, check no cards left, if no cards check buried, etc.)
+# 1b. Countercalling
 # 2. Prettier UI (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc.)
 # 3. Cleaner sockets (race conditions, clean exits, etc.)
 # 4. Other random crashes
+
+
+# TODO - potentially it is too fast and the hand can't update in time and the hand array populates while being iterated

@@ -3,7 +3,7 @@ from PyQt5 import uic
 import sys
 import socket
 import threading
-from time import sleep
+import time
 from game import Deck, Card, is_better
 import json
 
@@ -87,7 +87,7 @@ def communicate(client):
     update_clients(clients_names)  # update client names display
 
     if len(clients) == num_players:
-        sleep(1)
+        time.sleep(1)
 
         for c in clients[:-1]:
             c.send("start-wait".encode('utf-8'))
@@ -110,6 +110,7 @@ def communicate(client):
                     else:
                         c.send("dealover".encode('utf-8'))
             else:
+                time.sleep(1)
                 clients[(clients.index(client) + 1) % len(clients)].send("yourturn".encode('utf-8'))
         
         elif message.startswith("call"): # e.g., call-JOKER-RED-TEN-HEARTS

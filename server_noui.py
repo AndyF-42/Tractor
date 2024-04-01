@@ -1,7 +1,7 @@
 import sys
 import socket
 import threading
-from time import sleep
+import time
 from game import Deck, Card, is_better
 import json
 
@@ -58,7 +58,7 @@ class TractorServer():
         print(f"{name} joined!")
 
         if len(self.clients) == self.num_players:
-            sleep(1)
+            time.sleep(1)
 
             for c in self.clients[:-1]:
                 c.send("start-wait".encode('utf-8'))
@@ -80,6 +80,7 @@ class TractorServer():
                         else:
                             c.send("dealover".encode('utf-8'))
                 else:
+                    time.sleep(1)
                     self.clients[(self.clients.index(client) + 1) % len(self.clients)].send("yourturn".encode('utf-8'))
             
             elif message.startswith("call"): # e.g., call-JOKER-RED-TEN-HEARTS
