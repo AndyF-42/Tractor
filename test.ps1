@@ -1,4 +1,4 @@
-Start-Process powershell -ArgumentList "-Command `"python server_noui.py`""
+Start-Process powershell -ArgumentList "-NoExit -Command `"python server_noui.py`""
 
 $labels = @("A", "B", "C", "D")
 

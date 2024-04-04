@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, Q
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5 import QtGui
+from PyQt5.QtNetwork import QTcpSocket
 import sys
 import socket
 import threading
@@ -11,11 +12,31 @@ from functools import partial
 
 
 class UI(QMainWindow):
-    def __init__(self):
+    client = None
+    side = "defense"
+    hand = []
+    selected = []
+    pot = []
+    dom_suit = ""
+    speed_deal = False
+    auto_draw = 15
+    deal_over = False
+    starting_cards = []
+    
+
+    def __init__(self, address, port):
         super(UI, self).__init__()
+        
+        self.address = address
+        self.port = port
+        self.opponents = {
+            "p1": (120, 200),
+            "p2": (350, 100),
+            "p3": (550, 200)
+        }
 
         #--- PYQT5 CODE ---#
-        self.setWindowTitle("MainWindow")
+        self.setWindowTitle("Tractor Client")
         self.setGeometry(0, 0, 800, 648)
 
         self.centralwidget = QWidget(self)
@@ -62,6 +83,7 @@ class UI(QMainWindow):
 
         self.sort_checkbox = QCheckBox("AutoSort", self.centralwidget)
         self.sort_checkbox.setGeometry(660, 340, 70, 17)
+        self.sort_checkbox.setChecked(True)
 
         self.p2_label = QLabel("?", self.centralwidget)
         self.p2_label.setGeometry(350, 70, 81, 31)
@@ -103,19 +125,17 @@ class UI(QMainWindow):
         question = QPixmap("images/questionMark.png").scaledToHeight(64)
         self.dom_img.setPixmap(question)
         self.dom_img.resize(question.width(), question.height())
-
-        #sword = QPixmap("images/shield.png").scaledToHeight(64)
         self.team_img.setPixmap(question)
         self.team_img.resize(question.width(), question.height())
         
         self.name_submit.clicked.connect(self.setup)
-        self.draw_button.clicked.connect(draw)
-        self.call_button.clicked.connect(call)
-        self.sort_button.clicked.connect(sort)
-        self.done_button.clicked.connect(done)
-        self.play_button.clicked.connect(play)
-        self.score_button.clicked.connect(score)
-        self.burn_button.clicked.connect(burn)
+        self.draw_button.clicked.connect(self.draw)
+        self.call_button.clicked.connect(self.call)
+        self.sort_button.clicked.connect(self.sort_hand)
+        self.done_button.clicked.connect(self.done)
+        self.play_button.clicked.connect(self.play)
+        self.score_button.clicked.connect(self.score)
+        self.burn_button.clicked.connect(self.burn)
 
         self.p1_label.setVisible(False)
         self.p2_label.setVisible(False)
@@ -135,8 +155,8 @@ class UI(QMainWindow):
 
         self.card_map = {} # maps the card label to the Card object 
 
-        self.hand = [QLabel(self.centralwidget) for _ in range(25)]
-        for c in self.hand:
+        self.hand_labels = [QLabel(self.centralwidget) for _ in range(25)]
+        for c in self.hand_labels:
             c.mousePressEvent = partial(self.click, c)
 
         self.p1_cards = [QLabel(self.centralwidget) for _ in range(4)]
@@ -153,33 +173,43 @@ class UI(QMainWindow):
         if not label.pixmap():
             return
             
-        global selected, pot, hand
         card = self.card_map[label]
-        if label in self.hand:
-            if card in selected:
+        if label in self.hand_labels:
+            if card in self.selected:
                 label.move(label.x(), label.y() + 50)
-                selected.remove(card)
+                self.selected.remove(card)
             else:
                 label.move(label.x(), label.y() - 50)
-                selected.append(card)
+                self.selected.append(card)
         else: # clicked on pot card
-            if len(selected) == 1:
-                pot[pot.index(card)] = selected[0]
-                hand[hand.index(selected[0])] = card
-                selected = []
+            if len(self.selected) == 1:
+                self.pot[self.pot.index(card)] = self.selected[0]
+                self.hand[self.hand.index(self.selected[0])] = card
+                self.selected = []
                 if self.sort_checkbox.isChecked():
-                    sort()
+                    self.sort_hand()
                 else:
-                    self.update_hand(hand)
-                self.show_cards(pot, 96, (265, 300), 30)
+                    self.update_hand()
+                
+                self.show_cards(self.pot, 96, (265, 300), 30)
+    
+    def sort_hand(self):
+        self.hand = tractor_sorted(self.hand)
+        self.update_hand()
 
-
+    def update_hand(self):
+        # do some math to measure a good placement for hand
+        self.clear_hand()
+        self.selected = []
+        length = len(self.hand)
+        spacing = 50 - length
+        x = int((665 - spacing * (length-1)) // 2)
+        self.show_cards(self.hand, 192, (x, 424), spacing)
 
     # draw cards of height height onto the UI from Card list cards,
     # starting at tuple start (x, y), spaced by spacing
     def show_cards(self, cards, height, start, spacing):
-        print("started show_cards")
-        my_source = self.hand
+        my_source = self.hand_labels
         if start == (120, 200): my_source = self.p1_cards
         elif start == (350, 100): my_source = self.p2_cards
         elif start == (550, 200): my_source = self.p3_cards
@@ -187,7 +217,6 @@ class UI(QMainWindow):
         elif start == (265, 300): my_source = self.pot_cards
 
         for i, card in enumerate(cards):
-            print(f"showing card: {card.rank} of {card.suit}")
             label = my_source[i]
             label.move(int(start[0] + i * spacing), start[1])
             pixmap = QPixmap("images/cards/" + card.file_name()).scaledToHeight(height)
@@ -195,20 +224,6 @@ class UI(QMainWindow):
             label.resize(pixmap.width(), pixmap.height())
             label.show()
             self.card_map[label] = card
-            print("finished that card")
-        print("finished show_cards")
-    
-    # do some math to measure a good placement for hand
-    def update_hand(self, cards):
-        print("started update_hand")
-        global selected
-        self.clear_hand()
-        selected = []
-        length = len(cards)
-        spacing = 50 - length
-        x = int((665 - spacing * (length-1)) // 2)
-        self.show_cards(cards, 192, (x, 424), spacing)
-        print("finished update_hand")
 
     # clear any cards people placed down
     def clear_cards(self):
@@ -223,15 +238,117 @@ class UI(QMainWindow):
             card.setVisible(False)
     
     def clear_hand(self):
-        print("started clear_hand")
-        for card in self.hand:
+        for card in self.hand_labels:
             if card.pixmap():
                 card.setPixmap(QPixmap())
-        print("finished clear_hand")
+    
+    def check_team(self):
+        for card in self.hand:
+            if card.get_rank() == "TEN" and card.get_suit() == self.dom_suit:
+                self.side = "defense"
+                team = QPixmap("images/shield.png").scaledToHeight(64)
+                self.team_img.setPixmap(team)
+                self.team_img.resize(team.width(), team.height())
+                return
+            
+        if self.deal_over:
+            self.side = "attack"
+            team = QPixmap("images/sword.png").scaledToHeight(64)
+            self.team_img.setPixmap(team)
+            self.team_img.resize(team.width(), team.height())
+    
+    def set_dom(self):
+        suit_map = QPixmap("images/" + self.dom_suit.lower() + ".png").scaledToHeight(64)
+        set_dominant(self.dom_suit) # update dom values in game.py
+        if self.sort_checkbox.isChecked(): # autosort if checked since dom was updated
+            self.sort_hand()
+        self.dom_img.setPixmap(suit_map)
+        self.dom_img.resize(suit_map.width(), suit_map.height())
+        
+        if self.draw_button.isEnabled():
+            self.draw_button.setText("Auto Draw")
+            self.draw_button.move(350, 200)
+        else:
+            self.draw_button.setVisible(False)
+        self.speed_deal = True
+        self.check_team()
+    
+    def draw(self):
+        if self.draw_button.text() == "Auto Draw":
+            self.draw_button.setVisible(False)
+        self.client.write("draw".encode('utf-8'))
+    
+    def call(self):
+        # error checking (need two cards: one ten and one joker)
+        if len(self.selected) == 2 and ((self.selected[0].get_rank() == "JOKER" and self.selected[1].get_rank() == "TEN") or
+                                        (self.selected[1].get_rank() == "JOKER" and self.selected[0].get_rank() == "TEN")):
+            self.client.write(("call-" + self.selected[0].get_rank() + "-" + self.selected[0].get_suit() +
+                                   "-" + self.selected[1].get_rank() + "-" + self.selected[1].get_suit()).encode('utf-8'))
+            self.call_button.setVisible(False)
+            if self.selected[0].get_rank() == "TEN": self.dom_suit = self.selected[0].get_suit()
+            else: self.dom_suit = self.selected[1].get_suit()
+            self.set_dom()
+        else:
+            bad_call = QMessageBox()
+            bad_call.setIcon(QMessageBox.Critical)
+            bad_call.setWindowTitle("Bad Call")
+            bad_call.setText("You must call with exactly one ten and one joker!")
+            bad_call.exec_()
+    
+    def done(self):
+        self.clear_pot()
+        self.client.write(("bury-" + str(len(self.pot)) + "-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.pot])).encode('utf-8'))
+
+    def play(self):
+        if not self.selected:
+            bad_play = QMessageBox()
+            bad_play.setIcon(QMessageBox.Critical)
+            bad_play.setWindowTitle("Invalid Play")
+            bad_play.setText("Must select 1, 2, or 4 cards to play")
+            bad_play.exec_()
+            return     
+
+        if valid_play(self.starting_cards, self.selected, self.hand):
+            self.client.write(("play-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.selected])).encode('utf-8'))
+            #display cards and remove from hand
+            self.show_cards(self.selected, 96, (350,300), 30)
+            self.hand = [card for card in self.hand if card not in self.selected]
+            
+            if self.sort_checkbox.isChecked(): # autosort if checked since dom was updated
+                self.sort_hand()
+            else:
+                self.update_hand()
+                
+            self.play_button.setEnabled(False)
+        else:
+            bad_play = QMessageBox()
+            bad_play.setIcon(QMessageBox.Critical)
+            bad_play.setWindowTitle("Invalid Play")
+            bad_play.setText("Invalid play!")
+            bad_play.exec_()
+        
+    def score(self):
+        if self.side == "defense":
+            confirm = QMessageBox()
+            confirm.setIcon(QMessageBox.Question)
+            response = QMessageBox.question(confirm, 'Confirm Action', "Are you sure you want to score? You are a defender.", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if response == QMessageBox.Yes:
+                self.client.write("score-True".encode('utf-8'))
+        else:
+            self.client.write("score-True".encode('utf-8'))
+
+    def burn(self):
+        if self.side == "attack":
+            confirm = QMessageBox()
+            confirm.setIcon(QMessageBox.Question)
+            response = QMessageBox.question(confirm, 'Confirm Action', "Are you sure you want to burn? You are an attacker.", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if response == QMessageBox.Yes:
+                self.client.write("score-False".encode('utf-8'))
+        else:
+            self.client.write("score-False".encode('utf-8'))
 
     def setup(self):
-        global your_name
-        name = MainWindow.name_entry.text()
+        name = self.name_entry.text()
         if len(name) < 1 or len(name) > 11 or "-" in name or name.strip() == "You":
             bad_name = QMessageBox()
             bad_name.setIcon(QMessageBox.Critical)
@@ -241,345 +358,179 @@ class UI(QMainWindow):
             elif "-" in name:
                 bad_name.setText("Invalid character \"-\" in name")
             elif name.strip() == "You":
-                bad_name.setText("Fuck off. You're not cute.")
+                bad_name.setText("That will unfortunately break my game. Please choose, like, any other name.")
             else:
                 bad_name.setText("Name is too long!")
             bad_name.exec_()
         else:
-            your_name = name
-            self.connect(your_name)
+            self.your_name = name
+            self.connect()
 
-    def connect(self, name):
-        global client, HOST_PORT, HOST_ADDR
-        try:
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect((HOST_ADDR, HOST_PORT))
-            client.send(name.encode('utf-8'))
-            # start a thread to keep receiving message from server
-            # thread = threading.Thread(target=receive, args=(client,))
-            # thread.start()
-            self.receiver = Receiver(client)
-            self.receiver.start()
-            MainWindow.setWindowTitle("Tractor Client - " + name)
-            
-        except socket.error:
-            error = QMessageBox()
-            error.setIcon(QMessageBox.Critical)
-            error.setText("Error: Could not connect to server")
-            error.setWindowTitle("Connection Issue")
-            error.exec_()
-
-
-class Receiver(QThread):
-    finished = pyqtSignal()  # Signal to indicate that the work is finished
-
-    def __init__(self, client):
-        super().__init__()
-        self.client = client
-
-    def run(self):
-        # Put your task code here
-        receive(self.client)
-        self.finished.emit()
+    def connect(self):
+        self.client = QTcpSocket(self)
+        self.client.connected.connect(self.on_connected)
+        self.client.readyRead.connect(self.read_data)
+        self.client.error.connect(self.on_error)
+        self.client.connectToHost(self.address, self.port)
         
+        self.setWindowTitle("Tractor Client - " + self.your_name)
 
-def receive(sock):
-    global your_name, opponents, MainWindow, SPEED_DEAL, dom_suit, pot, auto_draw, deal_over, starting_cards, hand
-    while True:
-        message = sock.recv(4096).decode('utf-8')
-
-        if not message:
-            print("No message")
-            break
+    def on_connected(self):
+        print("Connected to server!")
+        self.client.write(f"name-{self.your_name}".encode('utf-8'))
     
+    def on_error(self, socket_error):
+        print("Socket error:", socket_error)
+        
+    def read_data(self):
+        message = self.client.readAll().data().decode('-utf-8')
+        
+        print(f"message: {message}")
+        
         if message.startswith("welcome"): # welcome-0 for first, or welcome-3-Andy-Dustin-Michael for 3 other ppl or welcome-1-Andy for one other, etc...
-            MainWindow.p1_label.setVisible(True)
-            MainWindow.p2_label.setVisible(True)
-            MainWindow.p3_label.setVisible(True)
-
             parts = message.split("-")
-
             for i in range(int(parts[1])):
-                # MainWindow.findChild(QLabel, "p"+str(3-i)+"_label").setText(parts[-1-i])
-                getattr(MainWindow, "p"+str(3-i)+"_label").setText(parts[-1-i])
-                opponents[parts[-1-i]] = opponents.pop("p"+str(3-i))
-
-            MainWindow.title.setText("Waiting for players...")
-            MainWindow.name_frame.setVisible(False)
-
-        elif message.startswith("joined"):  # joined-[my_index]-[newplayer_index]-[name] 
+                self.opponents[parts[-1-i]] = self.opponents.pop("p"+str(3-i))
+                getattr(self, "p"+str(3-i)+"_label").setText(parts[-1-i])
+            
+            self.p1_label.setVisible(True)
+            self.p2_label.setVisible(True)
+            self.p3_label.setVisible(True)
+            self.title.setText("Waiting for players...")
+            self.name_frame.setVisible(False)
+        
+        elif message.startswith("joined"): # joined-[my_index]-[newplayer_index]-[name] 
             parts = message.split("-")
             index = int(parts[2]) - int(parts[1])
-            # MainWindow.findChild(QLabel, "p"+str(index)+"_label").setText(parts[3])
-            getattr(MainWindow, "p"+str(index)+"_label").setText(parts[3])
-            opponents[parts[3]] = opponents.pop("p"+str(index))
-        
+            self.opponents[parts[3]] = self.opponents.pop("p"+str(index))           
+            getattr(self, "p"+str(index)+"_label").setText(parts[3])
+
         elif message.startswith("start"):
-            MainWindow.title.setText("Tractor - " + your_name)
+            self.title.setText("Tractor - " + self.your_name)
 
-            MainWindow.call_button.setVisible(True)
-            MainWindow.draw_button.setVisible(True)
-            MainWindow.sort_button.setVisible(True)
-            MainWindow.sort_checkbox.setVisible(True)
-            MainWindow.dom_img.setVisible(True)
-            MainWindow.team_img.setVisible(True)
-            MainWindow.points_label.setVisible(True)
-            MainWindow.points_label.setText("0/80")
-
-            MainWindow.call_button.setEnabled(True)
-            MainWindow.draw_button.setEnabled(message == "start-play")
-        
+            self.call_button.setVisible(True)
+            self.draw_button.setVisible(True)
+            self.sort_button.setVisible(True)
+            self.sort_checkbox.setVisible(True)
+            self.dom_img.setVisible(True)
+            self.team_img.setVisible(True)
+            self.points_label.setVisible(True)
+            self.points_label.setText("0/80")
+            
+            self.call_button.setEnabled(message == "start-play")
+            self.draw_button.setEnabled(message == "start-play")
+            
         elif message.startswith("yourturn"):
-            MainWindow.draw_button.setEnabled(True)
-            if SPEED_DEAL or auto_draw > 0:
-                draw()
-
+            self.draw_button.setEnabled(True)
+            self.call_button.setEnabled(True)
+            if self.speed_deal or self.auto_draw > 0:
+                self.draw()
+                
         elif message.startswith("draw"):
-            auto_draw -= 1
+            self.auto_draw -= 1
             message = message.split("-")
-            hand.append(Card(message[1], message[2]))
-            print(f"drew {message[1]} of {message[2]}")
-            if MainWindow.sort_checkbox.isChecked():
-                sort()
+            self.hand.append(Card(message[1], message[2]))
+            
+            if self.sort_checkbox.isChecked():
+                self.sort_hand()
             else:
-                print("UPDATING HAND!")
-                MainWindow.update_hand(hand)
-            MainWindow.draw_button.setEnabled(False)
-            check_team()
+                self.update_hand()
+                
+            self.draw_button.setEnabled(False)
+            self.call_button.setEnabled(False)
+            self.check_team()
         
         elif message.startswith("call"): # e.g., call-Andy-JOKER-RED-TEN-HEARTS
             message = message.split("-")
-            MainWindow.call_button.setVisible(False)
-            MainWindow.show_cards([Card(message[2], message[3]), Card(message[4], message[5])], 96, opponents[message[1]], 30)
-            if message[2] == "TEN": dom_suit = message[3]
-            else: dom_suit = message[5]
-            set_dom()
-            check_team()
+            self.call_button.setVisible(False)
+            self.show_cards([Card(message[2], message[3]), Card(message[4], message[5])], 96, self.opponents[message[1]], 30)
+            if message[2] == "TEN": self.dom_suit = message[3]
+            else: self.dom_suit = message[5]
+            self.set_dom()
         
         elif message.startswith("pot"): # e.g., pot-8-TEN-DIAMONDS-TEN-HEARTS-ACE-HEARTS-...
-            SPEED_DEAL = False
-            MainWindow.done_button.setVisible(True)
+            self.speed_deal = False
+            self.done_button.setVisible(True)
             message = message.split("-")
-            pot = [Card(message[i], message[i+1]) for i in range(2, len(message), 2)]
-            MainWindow.show_cards(pot, 96, (265, 300), 30)
+            self.pot = [Card(message[i], message[i+1]) for i in range(2, len(message), 2)]
+            self.show_cards(self.pot, 96, (265, 300), 30)
 
         elif message.startswith("dealover"):
-            deal_over = True
-            SPEED_DEAL = False
-            MainWindow.draw_button.setVisible(False)
-            if dom_suit:
-                check_team()
-        
-        elif message.startswith("play"):
-            MainWindow.clear_cards()
-            MainWindow.play_button.setVisible(True)
-            MainWindow.play_button.setEnabled(message == "play-yourturn")
+            self.deal_over = True
+            self.speed_deal = False
+            self.draw_button.setVisible(False)
+            if self.dom_suit:
+                self.check_team()
 
+        elif message.startswith("play"):
+            self.clear_cards()
+            self.play_button.setVisible(True)
+            self.play_button.setEnabled(message == "play-yourturn")
+        
         elif message.startswith("put"): # e.g., put-Andy-TEN-HEARTS-TEN-HEARTS-STARTING-TEN-HEARTS-TEN-HEARTS-GO
             message = message.split("-")
-            MainWindow.call_button.setVisible(False)
+            self.call_button.setVisible(False) # TODO - really?
             if message[-1] == "GO":
-                MainWindow.play_button.setEnabled(True)
+                self.play_button.setEnabled(True)
                 message = message[:-1]
             
             if "STARTING" in message:
-                MainWindow.show_cards([Card(message[i], message[i+1]) for i in range(2, message.index("STARTING"), 2)], 96, opponents[message[1]], 30)
-                starting_cards = [Card(message[i], message[i+1]) for i in range(message.index("STARTING") + 1, len(message), 2)]
+                self.show_cards([Card(message[i], message[i+1]) for i in range(2, message.index("STARTING"), 2)], 96, self.opponents[message[1]], 30)
+                self.starting_cards = [Card(message[i], message[i+1]) for i in range(message.index("STARTING") + 1, len(message), 2)]
             else:
-                MainWindow.show_cards([Card(message[i], message[i+1]) for i in range(2, len(message), 2)], 96, opponents[message[1]], 30)
-        
+                self.show_cards([Card(message[i], message[i+1]) for i in range(2, len(message), 2)], 96, self.opponents[message[1]], 30)
+            
         elif message.startswith("winner"): # e.g., winner-Andy or winner-You or winner-You-POINTS
-            starting_cards = []
+            self.starting_cards = []
             message = message.split("-")
-            MainWindow.message_label.setVisible(True)
-            MainWindow.play_button.setVisible(False)
-            MainWindow.message_label.setText(message[1] + (" win!" if message[1] == "You" else " wins!"))
+            self.message_label.setVisible(True)
+            self.play_button.setVisible(False)
+            self.message_label.setText(message[1] + (" win!" if message[1] == "You" else " wins!"))
             
             if message[1] == "You" and len(message) == 3:
-                MainWindow.score_button.setVisible(True)
-                MainWindow.burn_button.setVisible(True)
-            elif message[1] == "You" and not hand: # NO CARDS LEFT ADD MORE HERE
-                client.send("nocards".encode('utf-8'))
+                self.score_button.setVisible(True)
+                self.burn_button.setVisible(True)
+            elif message[1] == "You" and not self.hand: # NO CARDS LEFT. TODO - ADD OTHER GAME END 
+                self.client.write("nocards".encode('utf-8'))
             elif len(message) != 3:
                 time.sleep(3) # TODO - can't sleep like this
-                MainWindow.message_label.setVisible(False)
-                MainWindow.play_button.setEnabled(message[1] == "You")
-                MainWindow.clear_cards()
+                self.message_label.setVisible(False)
+                self.play_button.setEnabled(message[1] == "You")
+                self.clear_cards()
 
         elif message.startswith("score"): # e.g., score-True-60-GO or score-False-45
             message = message.split("-")
-            MainWindow.points_label.setText(message[2] + "/80")
-            MainWindow.score_button.setVisible(False)
-            MainWindow.burn_button.setVisible(False)
+            self.points_label.setText(message[2] + "/80")
+            self.score_button.setVisible(False)
+            self.burn_button.setVisible(False)
 
-            if len(message) == 4 and not hand: # NO CARDS LEFT ADD MORE HERE
+            if len(message) == 4 and not self.hand: # NO CARDS LEFT. TODO - ADD OTHER GAME END
                 pass
             else:
-                MainWindow.message_label.setText("SCORED" if message[1] == "True" else "BURNED")
+                self.message_label.setText("SCORED" if message[1] == "True" else "BURNED")
                 time.sleep(3) # TODO - can't sleep like this
-                MainWindow.message_label.setVisible(False)
-                MainWindow.play_button.setVisible(True)
-                MainWindow.play_button.setEnabled(len(message) == 4)
-                MainWindow.clear_cards()
+                self.message_label.setVisible(False)
+                self.play_button.setVisible(True)
+                self.play_button.setEnabled(len(message) == 4)
+                self.clear_cards()
         
         elif message.startswith("gameover"): # e.g., gameover-attack or gameover-defense
             message = message.split("-")
-            MainWindow.score_button.setVisible(False)
-            MainWindow.burn_button.setVisible(False)
-            MainWindow.message_label.setText(message[1].upper() + " WINS!")
-            MainWindow.message_label.setVisible(True)
-
-
-    sock.close()
-
-
-def draw():
-    if MainWindow.draw_button.text() == "Auto Draw":
-        MainWindow.draw_button.setVisible(False)
-    client.send("draw".encode('utf-8'))
-
-
-def call():
-    global dom_suit
-    # error checking (need two cards: one ten and one joker)
-    if len(selected) == 2 and ((selected[0].get_rank() == "JOKER" and selected[1].get_rank() == "TEN") or
-                               (selected[1].get_rank() == "JOKER" and selected[0].get_rank() == "TEN")):
-        client.send(("call-" + selected[0].get_rank() + "-" + selected[0].get_suit() +
-                         "-" + selected[1].get_rank() + "-" + selected[1].get_suit()).encode('utf-8'))
-        MainWindow.call_button.setVisible(False)
-        if selected[0].get_rank() == "TEN": dom_suit = selected[0].get_suit()
-        else: dom_suit = selected[1].get_suit()
-        set_dom()
-    else:
-        bad_call = QMessageBox()
-        bad_call.setIcon(QMessageBox.Critical)
-        bad_call.setWindowTitle("Bad Call")
-        bad_call.setText("You must call with exactly one ten and one joker!")
-        bad_call.exec_()
-        
-
-def set_dom():
-    global SPEED_DEAL, dom_suit
-    suit_map = QPixmap("images/" + dom_suit.lower() + ".png").scaledToHeight(64)
-    set_dominant(dom_suit) # update dom values in game.py
-    if MainWindow.sort_checkbox.isChecked(): # autosort if checked since dom was updated
-        sort()
-    MainWindow.dom_img.setPixmap(suit_map)
-    MainWindow.dom_img.resize(suit_map.width(), suit_map.height())
-    if MainWindow.draw_button.isEnabled():
-        MainWindow.draw_button.setText("Auto Draw")
-        MainWindow.draw_button.move(350, 200)
-    else:
-        MainWindow.draw_button.setVisible(False)
-    SPEED_DEAL = True
-    check_team()
-
-
-def check_team():
-    global deal_over, side
-    print("checking team")
-    team = QPixmap("images/questionMark.png").scaledToHeight(64)
-    for card in hand:
-        if card.get_rank() == "TEN" and card.get_suit() == dom_suit:
-            team = QPixmap("images/shield.png").scaledToHeight(64)
-            side = "defense"
-            deal_over = False
-            break
-    if deal_over:
-        team = QPixmap("images/sword.png").scaledToHeight(64)
-        side = "attack"
-    MainWindow.team_img.setPixmap(team)
-    MainWindow.team_img.resize(team.width(), team.height())
-    print("finished check_team")
-
-
-def sort():
-    global hand
-    hand = tractor_sorted(hand)
-    MainWindow.update_hand(hand)
-
-
-def done():
-    MainWindow.clear_pot()
-    client.send(("bury-" + str(len(pot)) + "-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in pot])).encode('utf-8'))
-
-
-def play():
-    global hand, selected, starting_cards
-    if not selected:
-        bad_play = QMessageBox()
-        bad_play.setIcon(QMessageBox.Critical)
-        bad_play.setWindowTitle("Invalid Play")
-        bad_play.setText("Must select 1, 2, or 4 cards to play")
-        bad_play.exec_()
-        return     
-
-    if valid_play(starting_cards, selected, hand):
-        client.send(("play-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in selected])).encode('utf-8'))
-        #display cards and remove from hand
-        MainWindow.show_cards(selected, 96, (350,300), 30)
-        hand = [card for card in hand if card not in selected]
-        MainWindow.update_hand(hand)
-        MainWindow.play_button.setEnabled(False)
-    else:
-        bad_play = QMessageBox()
-        bad_play.setIcon(QMessageBox.Critical)
-        bad_play.setWindowTitle("Invalid Play")
-        bad_play.setText("Invalid play!")
-        bad_play.exec_()
-
-
-def score():
-    global side
-    if side == "defense":
-        confirm = QMessageBox()
-        confirm.setIcon(QMessageBox.Question)
-        response = QMessageBox.question(confirm, 'Confirm Action', "Are you sure you want to score? You are a defender.", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if response == QMessageBox.Yes:
-            client.send("score-True".encode('utf-8'))
-    else:
-        client.send("score-True".encode('utf-8'))
-
-
-def burn():
-    global side
-    if side == "attack":
-        confirm = QMessageBox()
-        confirm.setIcon(QMessageBox.Question)
-        response = QMessageBox.question(confirm, 'Confirm Action', "Are you sure you want to burn? You are an attacker.", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if response == QMessageBox.Yes:
-            client.send("score-False".encode('utf-8'))
-    else:
-        client.send("score-False".encode('utf-8'))
+            self.score_button.setVisible(False)
+            self.burn_button.setVisible(False)
+            self.message_label.setText(message[1].upper() + " WINS!")
+            self.message_label.setVisible(True)
 
 
 
-HOST_ADDR = "127.0.0.1" # input("Host IP address: ")
-HOST_PORT = 5050 # int(input("Host port: "))
+if __name__ == "__main__":
+    address = input("Host IP address: ")
+    port = int(input("Host port: "))
 
-app = QApplication(sys.argv)
-MainWindow = UI()
-MainWindow.setWindowTitle("Tractor Client")
+    app = QApplication(sys.argv)
+    MainWindow = UI(address, port)
+    sys.exit(app.exec_())
 
-client = None
-
-your_name = ""
-opponents = {
-    "p1": (120, 200),
-    "p2": (350, 100),
-    "p3": (550, 200)
-}
-side = "defense"
-hand = []
-selected = []
-pot = []
-dom_suit = ""
-SPEED_DEAL = False
-auto_draw = 15
-deal_over = False
-starting_cards = []
-
-sys.exit(app.exec_())
 
 
 
@@ -587,10 +538,5 @@ sys.exit(app.exec_())
 # NEXT STEPS
 # ----------
 # 1. Winning the game (check points, check no cards left, if no cards check buried, etc.)
-# 1b. Countercalling
-# 2. Prettier UI (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc.)
-# 3. Cleaner sockets (race conditions, clean exits, etc.)
-# 4. Other random crashes
-
-
-# TODO - potentially it is too fast and the hand can't update in time and the hand array populates while being iterated
+# 2. Countercalling
+# 3. Prettier UI (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc.)
