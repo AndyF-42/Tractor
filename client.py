@@ -1,14 +1,15 @@
+from game import Card, set_dominant, tractor_sorted, valid_play
+
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, QMessageBox, QLabel, QWidget, QFrame, QCheckBox
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5 import QtGui
 from PyQt5.QtNetwork import QTcpSocket
+
 import sys
-import socket
-import threading
-from game import Card, set_dominant, tractor_sorted, valid_play
 import time
 from functools import partial
+
 
 
 class UI(QMainWindow):
@@ -34,6 +35,7 @@ class UI(QMainWindow):
             "p2": (350, 100),
             "p3": (550, 200)
         }
+        self.timer = QTimer()
 
         #--- PYQT5 CODE ---#
         self.setWindowTitle("Tractor Client")
@@ -469,7 +471,7 @@ class UI(QMainWindow):
         
         elif message.startswith("put"): # e.g., put-Andy-TEN-HEARTS-TEN-HEARTS-STARTING-TEN-HEARTS-TEN-HEARTS-GO
             message = message.split("-")
-            self.call_button.setVisible(False) # TODO - really?
+            self.call_button.setVisible(False)
             if message[-1] == "GO":
                 self.play_button.setEnabled(True)
                 message = message[:-1]
@@ -490,13 +492,12 @@ class UI(QMainWindow):
             if message[1] == "You" and len(message) == 3:
                 self.score_button.setVisible(True)
                 self.burn_button.setVisible(True)
-            elif message[1] == "You" and not self.hand: # NO CARDS LEFT. TODO - ADD OTHER GAME END 
-                self.client.write("nocards".encode('utf-8'))
-            elif len(message) != 3:
-                time.sleep(3) # TODO - can't sleep like this
-                self.message_label.setVisible(False)
-                self.play_button.setEnabled(message[1] == "You")
-                self.clear_cards()
+            elif message[1] == "You" and not self.hand:
+                self.timer.singleShot(3000, self.no_cards)
+            elif len(message) != 3 and not self.hand:
+                self.timer.singleShot(3000, self.clean_screen)
+            else:
+                self.timer.singleShot(3000, lambda: self.next_play(message[1] == "You"))
 
         elif message.startswith("score"): # e.g., score-True-60-GO or score-False-45
             message = message.split("-")
@@ -504,22 +505,44 @@ class UI(QMainWindow):
             self.score_button.setVisible(False)
             self.burn_button.setVisible(False)
 
-            if len(message) == 4 and not self.hand: # NO CARDS LEFT. TODO - ADD OTHER GAME END
-                pass
+            if len(message) == 4 and not self.hand:
+                self.message_label.setText("SCORED" if message[1] == "True" else "BURNED")
+                self.timer.singleShot(3000, self.no_cards)
             else:
                 self.message_label.setText("SCORED" if message[1] == "True" else "BURNED")
-                time.sleep(3) # TODO - can't sleep like this
-                self.message_label.setVisible(False)
-                self.play_button.setVisible(True)
-                self.play_button.setEnabled(len(message) == 4)
-                self.clear_cards()
-        
-        elif message.startswith("gameover"): # e.g., gameover-attack or gameover-defense
+                self.timer.singleShot(3000, lambda: self.next_play(len(message) == 4))
+                
+        elif message.startswith("gameover"): # e.g., gameover-attack-85 or gameover-defense-70
             message = message.split("-")
+            self.points_label.setText(message[2] + "/80")
             self.score_button.setVisible(False)
             self.burn_button.setVisible(False)
             self.message_label.setText(message[1].upper() + " WINS!")
             self.message_label.setVisible(True)
+        
+        elif message.startswith("endpot"): # e.g., endpot-8-KING-HEARTS-FIVE-SPADES-...
+            self.score_button.setVisible(True)
+            self.burn_button.setVisible(True)
+            message = message.split("-")
+            self.pot = [Card(message[i], message[i+1]) for i in range(2, len(message), 2)]
+            self.show_cards(self.pot, 96, (265, 300), 30)
+            
+    
+    # --- TIMED FUNCTIONS --- #
+    
+    def next_play(self, next_player: bool):
+        self.message_label.setVisible(False)
+        self.play_button.setVisible(True)
+        self.play_button.setEnabled(next_player)
+        self.clear_cards()
+
+    def no_cards(self):
+        self.clear_cards()
+        self.client.write("nocards".encode('utf-8'))
+    
+    def clean_screen(self):
+        self.message_label.setVisible(False)
+        self.clear_cards()
 
 
 
@@ -535,8 +558,12 @@ if __name__ == "__main__":
 
 
 
-# NEXT STEPS
+# TODO 
 # ----------
-# 1. Winning the game (check points, check no cards left, if no cards check buried, etc.)
-# 2. Countercalling
-# 3. Prettier UI (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc.)
+# - Winning the game (check points, check no cards left, if no cards check buried, etc.)
+# - Countercalling
+# - Prettier UI (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc.)
+# - Fix suit images
+# - Check if nobody can call
+# - f-string formatting
+# - clicking on right-most card

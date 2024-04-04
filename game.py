@@ -164,12 +164,12 @@ def tractor_sorted(cards):
 # -1 = bad play, 1 = single, 2 = pair, 3 = tractor
 def type_of(cards):
     cards = tractor_sorted(cards)
-    ranks = [card.get_rank() for card in cards]
-    suits = [card.get_suit() for card in cards]
-    if suits.count(suits[0]) == len(suits): # all suits match
-        if ranks.count(ranks[0]) == len(ranks): # all ranks match
+    card_ranks = [card.get_rank() for card in cards]
+    card_suits = [card.get_suit() for card in cards]
+    if card_suits.count(card_suits[0]) == len(card_suits): # all suits match
+        if card_ranks.count(card_ranks[0]) == len(card_ranks): # all ranks match
             return len(cards)
-        if len(cards) == 4 and ranks[0] == ranks[1] and ranks[2] == ranks[3] and ranks[2] == ranks[1] + 1: # tractor! technically doesn't work perfectly for high doms but whatever
+        if len(cards) == 4 and card_ranks[0] == card_ranks[1] and card_ranks[2] == card_ranks[3] and card_ranks[2] == card_ranks[1] + 1: # tractor! technically doesn't work perfectly for high doms but whatever
             return 3
     return -1
 
@@ -292,3 +292,11 @@ def is_better(best, playing):
 # deck.sort()
 # print("\n\n----------------------------\n\n")
 # deck.print()
+
+
+# TODO 
+# ----------
+# - Dom tractors
+# - Dom on normal card
+# - Recognizing 2s, 10s, etc. as dom
+# - 

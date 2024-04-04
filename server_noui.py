@@ -18,6 +18,7 @@ class TractorServer(QTcpServer):
     winning_cards = []
     potential_points = 0
     points_scored = 0
+    pot_points = -1
     clients = {}
     
     def __init__(self, num_players: int):
@@ -41,7 +42,6 @@ class TractorServer(QTcpServer):
             client = self.nextPendingConnection()
             self.clients[client] = ""
             client.readyRead.connect(self.read_data)
-            print("Client connected")
 
     def read_data(self):
         client = self.sender()
@@ -70,7 +70,7 @@ class TractorServer(QTcpServer):
             card = self.deck.draw()
             client.write(("draw-" + card.get_rank() + "-" + card.get_suit()).encode('utf-8')) # e.g., "draw-THREE-CLUBS"
             
-            self.timer.singleShot(500, lambda: self.next_turn(client))
+            self.timer.singleShot(125, lambda: self.next_turn(client))
         
         elif message.startswith("call"): # e.g., call-JOKER-RED-TEN-HEARTS
             self.caller = client
@@ -106,40 +106,42 @@ class TractorServer(QTcpServer):
 
             for c in self.clients:
                 if c != client:
-                    c.write(("put-" + name + "-" + "-".join(message[1:]) +
+                    c.write(("put-" + self.clients[client] + "-" + "-".join(message[1:]) +
                         ("-STARTING-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.starting_cards])) + 
                         ("-GO" if c == list(self.clients)[(list(self.clients).index(client) + 1) % len(self.clients)] else "")).encode('utf-8'))
             
             if self.first_player == list(self.clients)[(list(self.clients).index(client) + 1) % len(self.clients)]: # made it all around
-                for c in self.clients:
-                    if c == self.current_winner:
-                        c.write(("winner-You" + ("-POINTS" if self.potential_points > 0 else "")).encode('utf-8'))
-                    else:
-                        c.write(("winner-" + self.clients[self.current_winner] + ("-POINTS" if self.potential_points > 0 else "")).encode('utf-8'))
-                self.first_player = None
-                self.starting_cards = []
-                self.winning_cards = []
+                self.timer.singleShot(125, self.send_winner)
             
         elif message.startswith("score"): # e.g, score-True or score-False
             if message.split("-")[1] == "True":
-                self.points_scored += self.potential_points
+                self.points_scored += (self.potential_points if self.pot_points == -1 else self.pot_points)
 
             if self.points_scored >= 80:
                 for c in self.clients:
-                    c.write("gameover-attack".encode('utf-8'))
+                    c.write(f"gameover-attack-{self.points_scored}".encode('utf-8'))
             else:
                 for c in self.clients:
-                    if c == self.current_winner:
+                    if self.pot_points != -1:
+                        c.write(f"gameover-defense-{self.points_scored}".encode('utf-8'))
+                    elif c == self.current_winner:
                         c.write((message + "-" + str(self.points_scored) + "-GO").encode('utf-8'))
                     else:
                         c.write((message + "-" + str(self.points_scored)).encode('utf-8'))
 
             self.current_winner = None
             self.potential_points = 0
+        
+        elif message.startswith("nocards"):
+            self.pot_points = 0
+            for card in self.pot:
+                self.pot_points += card.get_points()
+            client.write(("endpot-" + str(len(self.pot)) + "-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.pot])).encode('utf-8'))
          
-    # --- TIMED FUNCTIONS --- #   
+         
+    # --- TIMED FUNCTIONS --- #
+    
     def start_play(self):
-        print("start_play!")
         for c in list(self.clients)[:-1]:
             c.write("start-wait".encode('utf-8'))
         list(self.clients)[-1].write("start-play".encode('utf-8'))
@@ -153,9 +155,17 @@ class TractorServer(QTcpServer):
                     c.write("dealover".encode('utf-8'))
         else:
             list(self.clients)[(list(self.clients).index(client) + 1) % len(self.clients)].write("yourturn".encode('utf-8'))
+    
+    def send_winner(self):
+        for c in self.clients:
+            if c == self.current_winner:
+                c.write(("winner-You" + ("-POINTS" if self.potential_points > 0 else "")).encode('utf-8'))
+            else:
+                c.write(("winner-" + self.clients[self.current_winner] + ("-POINTS" if self.potential_points > 0 else "")).encode('utf-8'))
+        self.first_player = None
+        self.starting_cards = []
+        self.winning_cards = []
 
-def start_play():
-    print("wtf")
 
     
 if __name__ == "__main__":
