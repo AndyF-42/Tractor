@@ -7,7 +7,6 @@ from PyQt5 import QtGui
 from PyQt5.QtNetwork import QTcpSocket
 
 import sys
-import time
 from functools import partial
 
 

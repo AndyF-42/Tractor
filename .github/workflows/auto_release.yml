@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -36,6 +36,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/client
+        asset_path: dist/client.exe
         asset_name: client.exe
         asset_content_type: application/octet-stream
