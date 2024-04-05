@@ -18,9 +18,6 @@ jobs:
 
     - name: Build Executable
       run: pyinstaller --onefile client.py
-    
-    - name: List files
-      run: ls -aR .
 
     - name: Create release
       id: create_release
@@ -39,6 +36,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/client.exe
+        asset_path: dist/client
         asset_name: client.exe
         asset_content_type: application/octet-stream
