@@ -7,6 +7,7 @@ from PyQt5 import QtGui
 from PyQt5.QtNetwork import QTcpSocket
 
 import sys
+import os
 from functools import partial
 
 
@@ -123,7 +124,7 @@ class UI(QMainWindow):
         self.points_label.setAlignment(Qt.AlignCenter)
         #--- PYQT5 CODE ---#
 
-        question = QPixmap("images/questionMark.png").scaledToHeight(64)
+        question = QPixmap(resource_path("images/questionMark.png")).scaledToHeight(64)
         self.dom_img.setPixmap(question)
         self.dom_img.resize(question.width(), question.height())
         self.team_img.setPixmap(question)
@@ -220,7 +221,7 @@ class UI(QMainWindow):
         for i, card in enumerate(cards):
             label = my_source[i]
             label.move(int(start[0] + i * spacing), start[1])
-            pixmap = QPixmap("images/cards/" + card.file_name()).scaledToHeight(height)
+            pixmap = QPixmap(resource_path("images/cards/" + card.file_name())).scaledToHeight(height)
             label.setPixmap(pixmap)
             label.resize(pixmap.width(), pixmap.height())
             label.show()
@@ -247,19 +248,19 @@ class UI(QMainWindow):
         for card in self.hand:
             if card.get_rank() == "TEN" and card.get_suit() == self.dom_suit:
                 self.side = "defense"
-                team = QPixmap("images/shield.png").scaledToHeight(64)
+                team = QPixmap(resource_path("images/shield.png")).scaledToHeight(64)
                 self.team_img.setPixmap(team)
                 self.team_img.resize(team.width(), team.height())
                 return
             
         if self.deal_over:
             self.side = "attack"
-            team = QPixmap("images/sword.png").scaledToHeight(64)
+            team = QPixmap(resource_path("images/sword.png")).scaledToHeight(64)
             self.team_img.setPixmap(team)
             self.team_img.resize(team.width(), team.height())
     
     def set_dom(self):
-        suit_map = QPixmap("images/" + self.dom_suit.lower() + ".png").scaledToHeight(64)
+        suit_map = QPixmap(resource_path("images/" + self.dom_suit.lower() + ".png")).scaledToHeight(64)
         set_dominant(self.dom_suit) # update dom values in game.py
         if self.sort_checkbox.isChecked(): # autosort if checked since dom was updated
             self.sort_hand()
@@ -543,6 +544,15 @@ class UI(QMainWindow):
         self.message_label.setVisible(False)
         self.clear_cards()
 
+
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 
 if __name__ == "__main__":
