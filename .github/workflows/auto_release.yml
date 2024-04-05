@@ -17,7 +17,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build Executable
-      run: pyinstaller --onefile client.py
+      run: pyinstaller --add-data "images;images" --onefile client.py
 
     - name: Create release
       id: create_release
