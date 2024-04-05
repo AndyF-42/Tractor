@@ -569,10 +569,11 @@ if __name__ == "__main__":
 
 # TODO 
 # ----------
-# - Winning the game (check points, check no cards left, if no cards check buried, etc.)
 # - Countercalling
 # - Prettier UI (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc.)
 # - Fix suit images
 # - Check if nobody can call
+# - ensure unique names
 # - f-string formatting
 # - clicking on right-most card
+# - GUI input for IP and port
