@@ -6,8 +6,25 @@ on:
       - '*'
 
 jobs:
+  setup_release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Pre-release ${{ github.ref }}
+          draft: false
+          prerelease: true
+
   build_windows:
     runs-on: windows-latest
+    needs: setup_release
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -24,13 +41,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ github.event.release.upload_url }}
+          upload_url: ${{ needs.setup_release.outputs.upload_url }}
           asset_path: dist/client.exe
           asset_name: client.exe
           asset_content_type: application/octet-stream
     
   build_mac:
     runs-on: macOS-latest
+    needs: setup_release
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -53,22 +71,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ github.event.release.upload_url }}
+          upload_url: ${{ needs.setup_release.outputs.upload_url }}
           asset_path: dist/client
           asset_name: client
           asset_content_type: application/octet-stream 
 
-  setup_release:
-    runs-on: ubuntu-latest
-    needs: [build_windows, build_mac]
-    steps:
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Pre-release ${{ github.ref }}
-          draft: false
-          prerelease: true
+  
