@@ -1,7 +1,6 @@
 from game import Deck, Card, is_better
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QTimer, QCoreApplication
 from PyQt5.QtNetwork import QTcpServer, QHostAddress
 
 import sys
@@ -169,6 +168,6 @@ class TractorServer(QTcpServer):
 
     
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
+    app = QCoreApplication(sys.argv)
     server = TractorServer(4)
     sys.exit(app.exec_())
