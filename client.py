@@ -20,7 +20,7 @@ class UI(QMainWindow):
     pot = []
     dom_suit = ""
     speed_deal = False
-    auto_draw = 15
+    auto_draw = 20
     deal_over = False
     starting_cards = []
     
@@ -419,7 +419,7 @@ class UI(QMainWindow):
             self.points_label.setVisible(True)
             self.points_label.setText("0/80")
             
-            self.call_button.setEnabled(message == "start-play")
+            self.call_button.setEnabled(True)
             self.draw_button.setEnabled(message == "start-play")
             
         elif message.startswith("yourturn"):
