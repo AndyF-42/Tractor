@@ -461,6 +461,7 @@ class UI(QMainWindow):
             self.deal_over = True
             self.speed_deal = False
             self.draw_button.setVisible(False)
+            self.call_button.setEnabled(True)
             if self.dom_suit:
                 self.check_team()
 

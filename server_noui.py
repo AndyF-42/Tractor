@@ -72,6 +72,8 @@ class TractorServer(QTcpServer):
             self.timer.singleShot(125, lambda: self.next_turn(client))
         
         elif message.startswith("call"): # e.g., call-JOKER-RED-TEN-HEARTS
+            if self.caller:
+                return
             self.caller = client
             for c in self.clients:
                 if c != client: # send non-callers the info
