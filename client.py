@@ -556,8 +556,12 @@ def resource_path(relative_path):
 
 
 if __name__ == "__main__":
-    address = input("Host IP address: ")
-    port = int(input("Host port: "))
+    if len(sys.argv) > 1 and sys.argv[1] == "--dev":
+        address = "127.0.0.1"
+        port = 5050
+    else:
+        address = input("Host IP address: ")
+        port = int(input("Host port: "))
 
     app = QApplication(sys.argv)
     MainWindow = UI(address, port)
