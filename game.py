@@ -69,7 +69,7 @@ class Card:
 
         return suit + "_" + str(rank) + ".svg"
 
-    # choose a random rank and suit
+    # choose a random rank and suit - for testing purposes
     def rand(self):
         self.rank = random.choice(list(ranks.keys()))
         self.suit = random.choice(list(suits.keys()))
@@ -97,12 +97,12 @@ class Card:
         return suits[self.suit]
 
 
-    def update_suit(self, dom_suit):
-        # swap suits to make it Red Black Red Black
-        if self.suit == suits[dom_suit]:
-            self.suit += 4
-        elif (self.suit == suits["CLUBS"] and dom_suit == "SPADES") or (self.suit == suits["SPADES"] and dom_suit == "DIAMONDS"):
-            self.suit -= 2
+    # def update_suit(self, dom_suit):
+    #     # swap suits to make it Red Black Red Black
+    #     if self.suit == suits[dom_suit]:
+    #         self.suit += 4
+    #     elif (self.suit == suits["CLUBS"] and dom_suit == "SPADES") or (self.suit == suits["SPADES"] and dom_suit == "DIAMONDS"):
+    #         self.suit -= 2
     
     def is_dominant(self):
         return True if self.rank_num() >= 12 or self.suit == max(list(suits.values())) else False
@@ -131,12 +131,12 @@ class Deck:
     def isempty(self):
         return not self.cards
 
-    def sort(self):
-        special = [card for card in self.cards if card.rank_num() >= 12]
-        self.cards[:] = [card for card in self.cards if card.rank_num() < 12]
-        self.cards.sort(key=lambda x: (x.suit_num(), x.rank_num()))
-        special.sort(key=lambda x: (x.rank_num(), x.suit_num()))
-        self.cards.extend(special)
+    # def sort(self):
+    #     special = [card for card in self.cards if card.rank_num() >= 12]
+    #     self.cards[:] = [card for card in self.cards if card.rank_num() < 12]
+    #     self.cards.sort(key=lambda x: (x.suit_num(), x.rank_num()))
+    #     special.sort(key=lambda x: (x.rank_num(), x.suit_num()))
+    #     self.cards.extend(special)
 
     def print(self):
         for card in self.cards:
@@ -145,6 +145,7 @@ class Deck:
 
 def set_dominant(dom_suit):
     suits[dom_suit] += 4
+    # adjust to make suit order alternate color
     if dom_suit == "SPADES":
         suits["CLUBS"] -= 2
     elif dom_suit == "DIAMONDS":
@@ -152,7 +153,7 @@ def set_dominant(dom_suit):
 
 def tractor_sorted(cards):
     special = [card for card in cards if card.rank_num() >= 12]
-    cards[:] = [card for card in cards if card.rank_num() < 12]
+    cards = [card for card in cards if card.rank_num() < 12]
     cards.sort(key=lambda x: (x.suit_num(), x.rank_num()))
     special.sort(key=lambda x: (x.rank_num(), x.suit_num()))
     cards.extend(special)
@@ -162,15 +163,31 @@ def tractor_sorted(cards):
 # NOTE: lots of 4-player-only functionality here
 
 # -1 = bad play, 1 = single, 2 = pair, 3 = tractor
-def type_of(cards):
+def type_of(cards) -> int:
     cards = tractor_sorted(cards)
-    card_ranks = [card.get_rank() for card in cards]
-    card_suits = [card.get_suit() for card in cards]
+    card_ranks = [ranks[card.rank] for card in cards]
+    card_suits = [suits[card.suit] for card in cards]
+
     if card_suits.count(card_suits[0]) == len(card_suits): # all suits match
         if card_ranks.count(card_ranks[0]) == len(card_ranks): # all ranks match
             return len(cards)
-        if len(cards) == 4 and card_ranks[0] == card_ranks[1] and card_ranks[2] == card_ranks[3] and card_ranks[2] == card_ranks[1] + 1: # tractor! technically doesn't work perfectly for high doms but whatever
+        if (len(cards) == 4 and card_ranks[0] == card_ranks[1] and card_ranks[2] == card_ranks[3] and
+            card_ranks[2] == card_ranks[1] + 1 and all([r < 12 for r in card_ranks])): # non-dom tractor
             return 3
+    
+    if (len(cards) == 4 and card_ranks[0] == card_ranks[1] and card_ranks[2] == card_ranks[3] and
+        card_suits[0] == card_suits[1] and card_suits[2] == card_suits[3]): # checking dom tractors
+        if (((card_ranks[0] == 11 and card_ranks[2] == 12) or (card_ranks[0] == 12 and card_ranks[2] == 13)) and
+            card_suits[0] == max(list(suits.values())) and card_suits[2] != max(list(suits.values()))): # straddling dom tractor
+            return 3 
+        if ((card_ranks[0] == card_ranks[2] and (card_ranks[0] == 12 or card_ranks[0] == 13)) and
+            card_suits[0] != max(list(suits.values())) and card_suits[2] == max(list(suits.values()))): # same rank dom tractor
+            return 3
+        if (card_ranks[0] == 13 and card_ranks[2] == 14 and card_suits[0] == max(list(suits.values())) and card_suits[2] == 1): # straddle joker tractor
+            return 3
+        if (card_ranks[0] == card_ranks[2] == 14 and card_suits[0] == 1 and card_suits[2] == 2): # all joker tractor
+            return 3
+    
     return -1
 
 def num_matching(checking, suit, is_dom):
@@ -217,7 +234,7 @@ VALID PLAY
 """
 
 def valid_play(starting, selected, hand):
-    if not starting:
+    if not starting: # no starting play, this is first play 
         return True if type_of(selected) != -1 else False
 
     if len(selected) != len(starting) or len(selected) == 0:
@@ -284,19 +301,13 @@ def is_better(best, playing):
     return False # both dom, same rank, same suit, precedence is first played
     
 
-# Testing: 
-# deck = Deck(2)
-# deck.shuffle()
-# deck.print()
-# set_dominant("CLUBS")
-# deck.sort()
-# print("\n\n----------------------------\n\n")
-# deck.print()
-
-
 # TODO 
 # ----------
 # - Dom tractors
 # - Dom on normal card
 # - Recognizing 2s, 10s, etc. as dom
-# - 
+# - tractors >4 cards
+# - remove getters
+# - remove class variables
+# - underscore any not-used functions
+# - type annotations

@@ -588,3 +588,6 @@ if __name__ == "__main__":
 # - f-string formatting
 # - GUI input for IP and port
 # - secure the incoming IPs
+# - more descriptive than "invalid play"
+# - if no cards selected, play is greyed out
+# - override invalid play
