@@ -42,8 +42,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.setup_release.outputs.upload_url }}
-          asset_path: dist/client.exe
-          asset_name: client.exe
+          asset_path: dist/Tractor-${{ github.ref }}-windows.exe
+          asset_name: Tractor-${{ github.ref }}-windows.exe
           asset_content_type: application/octet-stream
     
   build_mac:
@@ -72,8 +72,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.setup_release.outputs.upload_url }}
-          asset_path: dist/client
-          asset_name: client
+          asset_path: dist/Tractor-${{ github.ref }}-mac.app
+          asset_name: Tractor-${{ github.ref }}-mac.app
           asset_content_type: application/octet-stream 
 
   
