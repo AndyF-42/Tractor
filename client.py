@@ -591,3 +591,4 @@ if __name__ == "__main__":
 # - more descriptive than "invalid play"
 # - if no cards selected, play is greyed out
 # - override invalid play
+# - play again

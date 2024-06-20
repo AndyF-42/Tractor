@@ -105,7 +105,7 @@ class Card:
     #         self.suit -= 2
     
     def is_dominant(self):
-        return True if self.rank_num() >= 12 or self.suit == max(list(suits.values())) else False
+        return True if self.rank_num() >= 12 or self.suit_num() == max(list(suits.values())) else False
     
 
 
@@ -190,12 +190,14 @@ def type_of(cards) -> int:
     
     return -1
 
+# returns the number of cards matching the suit
 def num_matching(checking, suit, is_dom):
     if is_dom:
         return len([card for card in checking if card.is_dominant()])
     else:
         return len([card for card in checking if card.get_suit() == suit and not card.is_dominant()])
 
+# returns if the hand has a play of the given type 
 def has_type(type, suit, is_dom, hand):
     if is_dom:
         of_suit = [card for card in hand if card.is_dominant()]
@@ -211,9 +213,7 @@ def has_type(type, suit, is_dom, hand):
             if of_suit[i].get_rank() == of_suit[i+1].get_rank() and of_suit[i].get_suit() == of_suit[i+1].get_suit(): # has a pair
                 if type == 2:
                     return True
-                elif (i+3 < len(of_suit) and of_suit[i+2].get_rank() == of_suit[i+3].get_rank() and
-                                             of_suit[i+2].get_suit() == of_suit[i+3].get_suit() and
-                                             of_suit[i+2].get_rank() == of_suit[i].get_rank() + 1): # has a tractor
+                elif type_of(of_suit[i:i+4]) == 3: # has a tractor
                     return True
     
     return False
@@ -303,9 +303,6 @@ def is_better(best, playing):
 
 # TODO 
 # ----------
-# - Dom tractors
-# - Dom on normal card
-# - Recognizing 2s, 10s, etc. as dom
 # - tractors >4 cards
 # - remove getters
 # - remove class variables

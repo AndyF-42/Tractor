@@ -1,5 +1,5 @@
 import unittest
-from game import set_dominant, type_of, Card
+from game import set_dominant, type_of, has_type, Card
 
 class TestTypeOfFunction(unittest.TestCase):
     def test_single(self):
@@ -119,6 +119,29 @@ class TestTypeOfFunction(unittest.TestCase):
                                   Card("JOKER", "RED"),
                                   Card("JOKER", "RED")]), 3)
  
+ 
+class TestHasTypeFunction(unittest.TestCase):
+    def setUp(self):
+        set_dominant("HEARTS")
+        self.hand = [Card("THREE", "CLUBS"), Card("THREE", "CLUBS"),
+                     Card("FOUR", "CLUBS"), Card("FOUR", "CLUBS"),
+                     Card("THREE", "HEARTS")]
+
+    def test_has_single(self):
+        self.assert_(has_type(1, "CLUBS", False, self.hand))
+
+    def test_has_no_single(self):
+        self.assert_(not has_type(1, "DIAMONDS", False, self.hand))
+    
+    def test_has_pair(self):
+        self.assert_(has_type(2, "CLUBS", False, self.hand))
+    
+    def test_has_tractor(self):
+        self.assert_(has_type(3, "CLUBS", False, self.hand))
+
+    def test_has_dominant(self):
+        self.assert_(has_type(1, "DIAMONDS", True, self.hand))
+
 
 if __name__ == "__main__":
     unittest.main()
