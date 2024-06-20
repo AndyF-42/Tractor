@@ -34,7 +34,7 @@ jobs:
           pip install -r requirements_windows.txt
 
       - name: Build executable
-        run: pyinstaller --name Tractor-${{ github.ref }}-windows.exe --add-data "images;images" --onefile client.py
+        run: pyinstaller --name Tractor-${{ github.ref#refs/tags/ }}-windows.exe --add-data "images;images" --onefile client.py
 
       - name: Upload client.exe
         uses: actions/upload-release-asset@v1
@@ -42,8 +42,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.setup_release.outputs.upload_url }}
-          asset_path: dist/Tractor-${{ github.ref }}-windows.exe
-          asset_name: Tractor-${{ github.ref }}-windows.exe
+          asset_path: dist/Tractor-${{ github.ref#refs/tags/ }}-windows.exe
+          asset_name: Tractor-${{ github.ref#refs/tags/ }}-windows.exe
           asset_content_type: application/octet-stream
     
   build_mac:
@@ -64,7 +64,7 @@ jobs:
           pip install -r requirements_mac.txt
 
       - name: Build executable
-        run: pyinstaller --name Tractor-${{ github.ref }}-mac.app --add-data "images:images" --onefile client.py
+        run: pyinstaller --name Tractor-${{ github.ref#refs/tags/ }}-mac.app --add-data "images:images" --onefile client.py
 
       - name: Upload client
         uses: actions/upload-release-asset@v1
@@ -72,8 +72,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.setup_release.outputs.upload_url }}
-          asset_path: dist/Tractor-${{ github.ref }}-mac.app
-          asset_name: Tractor-${{ github.ref }}-mac.app
+          asset_path: dist/Tractor-${{ github.ref#refs/tags/ }}-mac.app
+          asset_name: Tractor-${{ github.ref#refs/tags/ }}-mac.app
           asset_content_type: application/octet-stream 
 
   
