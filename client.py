@@ -156,11 +156,7 @@ class UI(QMainWindow):
         self.team_img.setVisible(False)
 
         self.card_map = {} # maps the card label to the Card object 
-
-        self.hand_labels = [QLabel(self.centralwidget) for _ in range(25)]
-        for c in self.hand_labels:
-            c.mousePressEvent = partial(self.click, c)
-
+        self.hand_labels = [] 
         self.p1_cards = [QLabel(self.centralwidget) for _ in range(4)]
         self.p2_cards = [QLabel(self.centralwidget) for _ in range(4)]
         self.p3_cards = [QLabel(self.centralwidget) for _ in range(4)]
@@ -312,9 +308,15 @@ class UI(QMainWindow):
 
         if valid_play(self.starting_cards, self.selected, self.hand):
             self.client.write(("play-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.selected])).encode('utf-8'))
-            #display cards and remove from hand
+
+            # display cards and remove from hand
             self.show_cards(self.selected, 96, (350,300), 30)
             self.hand = [card for card in self.hand if card not in self.selected]
+            for label in self.hand_labels:
+                if self.card_map[label] in self.selected:
+                    label.deleteLater()
+            self.hand_labels = [label for label in self.hand_labels if self.card_map[label] not in self.selected]
+            self.card_map = {label: card for label, card in self.card_map.items() if card not in self.selected}
             
             if self.sort_checkbox.isChecked(): # autosort if checked since dom was updated
                 self.sort_hand()
@@ -432,6 +434,10 @@ class UI(QMainWindow):
             self.auto_draw -= 1
             message = message.split("-")
             self.hand.append(Card(message[1], message[2]))
+
+            label = QLabel(self.centralwidget)
+            label.mousePressEvent = partial(self.click, label)
+            self.hand_labels.append(label)
             
             if self.sort_checkbox.isChecked():
                 self.sort_hand()
@@ -580,5 +586,5 @@ if __name__ == "__main__":
 # - Check if nobody can call
 # - ensure unique names
 # - f-string formatting
-# - clicking on right-most card
 # - GUI input for IP and port
+# - secure the incoming IPs
