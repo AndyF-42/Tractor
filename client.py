@@ -526,14 +526,14 @@ class UI(QMainWindow):
             self.play_button.setVisible(False)
             self.message_label.setText(message[1] + (" win!" if message[1] == "You" else " wins!"))
             
-            if message[1] == "You" and len(message) == 3:
+            if message[1] == "You" and len(message) == 3: # you won, there are points
                 self.score_button.setVisible(True)
                 self.burn_button.setVisible(True)
-            elif message[1] == "You" and not self.hand:
+            elif message[1] == "You" and not self.hand: # you won, no points, out of cards
                 self.timer.singleShot(3000, self.no_cards)
-            elif len(message) != 3 and not self.hand:
+            elif len(message) != 3 and not self.hand: # anybody won, no points, out of cards
                 self.timer.singleShot(3000, self.clean_screen)
-            else:
+            else: # next play
                 self.timer.singleShot(3000, lambda: self.next_play(message[1] == "You"))
 
         elif message.startswith("score"): # e.g., score-True-60-GO or score-False-45
