@@ -25,24 +25,39 @@ class UI(QMainWindow):
     starting_cards = []
     
 
-    def __init__(self, address, port):
+    def __init__(self, name=""):
         super(UI, self).__init__()
         
-        self.address = address
-        self.port = port
-        self.opponents = {
-            "p1": (120, 200),
-            "p2": (350, 100),
-            "p3": (550, 200)
-        }
-        self.timer = QTimer()
-
         #--- PYQT5 CODE ---#
         self.setWindowTitle("Tractor Client")
         self.setGeometry(0, 0, 800, 648)
 
         self.centralwidget = QWidget(self)
         self.setCentralWidget(self.centralwidget)
+
+        self.host_frame = QFrame(self.centralwidget)
+        self.host_frame.setGeometry(270, 80, 271, 102)
+        self.host_frame.setStyleSheet("background-color: rgb(185, 252, 255);")
+        
+        self.ip_label = QLabel("IP:", self.host_frame)
+        self.ip_label.setGeometry(10, 10, 101, 31)
+        self.ip_label.setFont(QtGui.QFont("Segoe UI Semilight", 14))
+
+        self.name_label = QLabel("Name:", self.host_frame)
+        self.name_label.setGeometry(10, 61, 101, 31)
+        self.name_label.setFont(QtGui.QFont("Segoe UI Semilight", 14))
+
+        self.ip_entry = QLineEdit("127.0.0.1" if name else "", self.host_frame)
+        self.ip_entry.setGeometry(80, 10, 101, 31)
+        self.ip_entry.setStyleSheet("background-color: rgb(255, 255, 255);")
+        
+        self.name_entry = QLineEdit(name, self.host_frame)
+        self.name_entry.setGeometry(80, 61, 101, 31)
+        self.name_entry.setStyleSheet("background-color: rgb(255, 255, 255);")
+
+        self.host_connect = QPushButton("Connect", self.host_frame)
+        self.host_connect.setGeometry(190, 36, 71, 31)
+        self.host_connect.setStyleSheet("background-color: rgb(255, 238, 175); font: 10pt 'Segoe UI Semilight';")
 
         self.draw_button = QPushButton("DRAW", self.centralwidget)
         self.draw_button.setGeometry(300, 200, 81, 71)
@@ -67,21 +82,21 @@ class UI(QMainWindow):
         self.title.setAlignment(Qt.AlignCenter)
         self.title.setFont(QtGui.QFont("Arial", 24, QtGui.QFont.Bold))
 
-        self.name_frame = QFrame(self.centralwidget)
-        self.name_frame.setGeometry(270, 80, 271, 51)
-        self.name_frame.setStyleSheet("background-color: rgb(185, 252, 255);")
+        # self.name_frame = QFrame(self.centralwidget)
+        # self.name_frame.setGeometry(270, 80, 271, 51)
+        # self.name_frame.setStyleSheet("background-color: rgb(185, 252, 255);")
 
-        self.name_label = QLabel("Name:", self.name_frame)
-        self.name_label.setGeometry(10, 10, 101, 31)
-        self.name_label.setFont(QtGui.QFont("Segoe UI Semilight", 16))
+        # self.name_label = QLabel("Name:", self.name_frame)
+        # self.name_label.setGeometry(10, 10, 101, 31)
+        # self.name_label.setFont(QtGui.QFont("Segoe UI Semilight", 14))
 
-        self.name_entry = QLineEdit(self.name_frame)
-        self.name_entry.setGeometry(80, 10, 101, 31)
-        self.name_entry.setStyleSheet("background-color: rgb(255, 255, 255);")
+        # self.name_entry = QLineEdit(self.name_frame)
+        # self.name_entry.setGeometry(80, 10, 101, 31)
+        # self.name_entry.setStyleSheet("background-color: rgb(255, 255, 255);")
 
-        self.name_submit = QPushButton("Submit", self.name_frame)
-        self.name_submit.setGeometry(190, 10, 71, 31)
-        self.name_submit.setStyleSheet("background-color: rgb(255, 238, 175); font: 10pt 'Segoe UI Semilight';")
+        # self.name_submit = QPushButton("Submit", self.name_frame)
+        # self.name_submit.setGeometry(190, 10, 71, 31)
+        # self.name_submit.setStyleSheet("background-color: rgb(255, 238, 175); font: 10pt 'Segoe UI Semilight';")
 
         self.sort_checkbox = QCheckBox("AutoSort", self.centralwidget)
         self.sort_checkbox.setGeometry(660, 340, 70, 17)
@@ -124,13 +139,20 @@ class UI(QMainWindow):
         self.points_label.setAlignment(Qt.AlignCenter)
         #--- PYQT5 CODE ---#
 
+        self.opponents = {
+            "p1": (120, 200),
+            "p2": (350, 100),
+            "p3": (550, 200)
+        }
+        self.timer = QTimer()
+
         question = QPixmap(resource_path("images/questionMark.png")).scaledToHeight(64)
         self.dom_img.setPixmap(question)
         self.dom_img.resize(question.width(), question.height())
         self.team_img.setPixmap(question)
         self.team_img.resize(question.width(), question.height())
         
-        self.name_submit.clicked.connect(self.setup)
+        self.host_connect.clicked.connect(self.setup)
         self.draw_button.clicked.connect(self.draw)
         self.call_button.clicked.connect(self.call)
         self.sort_button.clicked.connect(self.sort_hand)
@@ -371,6 +393,8 @@ class UI(QMainWindow):
             self.connect()
 
     def connect(self):
+        self.address = self.ip_entry.text()
+        self.port = 5050
         self.client = QTcpSocket(self)
         self.client.connected.connect(self.on_connected)
         self.client.readyRead.connect(self.read_data)
@@ -384,7 +408,11 @@ class UI(QMainWindow):
         self.client.write(f"name-{self.your_name}".encode('utf-8'))
     
     def on_error(self, socket_error):
-        print("Socket error:", socket_error)
+        socket_err = QMessageBox()
+        socket_err.setIcon(QMessageBox.Critical)
+        socket_err.setWindowTitle("Socket Error")
+        socket_err.setText(f"Connection error: {socket_error}")
+        socket_err.exec_()
         
     def read_data(self):
         message = self.client.readAll().data().decode('-utf-8')
@@ -401,7 +429,7 @@ class UI(QMainWindow):
             self.p2_label.setVisible(True)
             self.p3_label.setVisible(True)
             self.title.setText("Waiting for players...")
-            self.name_frame.setVisible(False)
+            self.host_frame.setVisible(False)
         
         elif message.startswith("joined"): # joined-[my_index]-[newplayer_index]-[name] 
             parts = message.split("-")
@@ -563,15 +591,8 @@ def resource_path(relative_path):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--dev":
-        address = "127.0.0.1"
-        port = 5050
-    else:
-        address = input("Host IP address: ")
-        port = int(input("Host port: "))
-
     app = QApplication(sys.argv)
-    MainWindow = UI(address, port)
+    MainWindow = UI(*sys.argv[1:2]) # 2nd arg could be default name
     sys.exit(app.exec_())
 
 
@@ -587,7 +608,6 @@ if __name__ == "__main__":
 # - ensure unique names
 # - f-string formatting
 # - GUI input for IP and port
-# - secure the incoming IPs
 # - more descriptive than "invalid play"
 # - if no cards selected, play is greyed out
 # - override invalid play

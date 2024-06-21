@@ -29,8 +29,11 @@ class TractorServer(QTcpServer):
         self.pot = [self.deck.draw() for _ in range(2 * num_players)]
         self.timer = QTimer()
         
-        with open("secrets.json", "r") as secrets:
-            self.address, self.port = json.load(secrets).values()
+        if len(sys.argv) > 1 and sys.argv[1] == "--dev":
+            self.address = "127.0.0.1"
+        else:
+            self.address = "0.0.0.0"
+        self.port = 5050
 
         self.newConnection.connect(self.client_connected)
         self.listen(QHostAddress(self.address), self.port)
