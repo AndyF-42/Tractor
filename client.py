@@ -328,6 +328,7 @@ class UI(QMainWindow):
             bad_play.exec_()
             return     
 
+        self.selected = tractor_sorted(self.selected)
         valid, response = valid_play(self.starting_cards, self.selected, self.hand)
         if valid:
             self.client.write(("play-" + "-".join([card.rank + "-" + card.suit for card in self.selected])).encode('utf-8'))

@@ -191,6 +191,10 @@ VALID PLAY
 8. -> False
 """
 def valid_play(starting: list[Card], selected: list[Card], hand: list[Card]) -> Tuple[bool, str]:
+    starting = tractor_sorted(starting)
+    selected = tractor_sorted(selected)
+    hand = tractor_sorted(hand)
+    
     if not starting: # no starting play, this is first play 
         return (True, "") if _type_of(selected) != -1 else (False, "Not a valid tractor play.")
 
@@ -219,6 +223,7 @@ def valid_play(starting: list[Card], selected: list[Card], hand: list[Card]) -> 
 """
 IS BETTER
 ---------
+0. first play
 1. better type
 2. is "best" a dom and "playing" not? -> false
 3. is "playing" a dom and "best" not? -> true
@@ -229,7 +234,10 @@ IS BETTER
 8. -> false
 """
 def is_better(best: list[Card], playing: list[Card]) -> bool:
-    if not best:
+    best = tractor_sorted(best)
+    playing = tractor_sorted(playing)
+
+    if not best: # first play always best
         return True
 
     if _type_of(best) > _type_of(playing): # better type
@@ -238,8 +246,7 @@ def is_better(best: list[Card], playing: list[Card]) -> bool:
     if best[0].is_dominant() and not playing[0].is_dominant(): # dom > nondom
         return False
     
-    print(str(best[0].is_dominant()) + " " + str(playing[0].is_dominant()))
-    if not best[0].is_dominant() and playing[0].is_dominant(): # dom  > nondom
+    if not best[0].is_dominant() and playing[0].is_dominant(): # dom > nondom
         return True
 
     if not best[0].is_dominant() and best[0].suit != playing[0].suit: # both nondom but different, best is original suit and wins
@@ -253,10 +260,11 @@ def is_better(best: list[Card], playing: list[Card]) -> bool:
     
     if playing[0].suit != best[0].suit: # both dom, same rank, different suits, playing is better if dom suit or red joker  
         return True if playing[0].suit_num() == max(list(suits.values())) or playing[0].suit_num() == 2 else False
-
+    
     return False # both dom, same rank, same suit, precedence is first played
     
 
 # TODO 
 # ----------
 # - tractors >4 cards
+# - tractor baits two pairs

@@ -1,4 +1,4 @@
-from game import Deck, Card, is_better
+from game import Deck, Card, set_dominant, is_better
 
 from PyQt5.QtCore import QTimer, QCoreApplication
 from PyQt5.QtNetwork import QTcpServer, QHostAddress
@@ -78,9 +78,14 @@ class TractorServer(QTcpServer):
             if self.caller:
                 return
             self.caller = client
+
+            message = message.split("-")
+            if message[1] == "TEN": set_dominant(message[2])
+            else: set_dominant(message[4])
+            
             for c in self.clients:
                 if c != client: # send non-callers the info
-                    c.write(("call-" + self.clients[client] + "-" + "-".join(message.split("-")[1:])).encode('utf-8'))
+                    c.write(("call-" + self.clients[client] + "-" + "-".join(message[1:])).encode('utf-8'))
                 elif self.deck.isempty(): # if deck empty, send the pot to the caller
                     c.write(("pot-" + str(len(self.pot)) + "-" + "-".join([card.rank + "-" + card.suit for card in self.pot])).encode('utf-8'))
             
