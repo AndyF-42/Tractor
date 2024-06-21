@@ -31,7 +31,6 @@ suits = {
 
 
 class Card:
-
     def __init__(self, rank: str, suit: str):
         self.rank = rank # e.g., JACK or JOKER
         self.suit = suit # e.g., HEARTS or BLACK
@@ -55,22 +54,20 @@ class Card:
         return suit + "_" + str(rank) + ".svg"
 
     # return rank as number from 1-14
-    def rank_num(self):
+    def rank_num(self) -> int:
         return ranks[self.rank]
     
     # return suit as number (changes for dominants)
-    def suit_num(self):
+    def suit_num(self) -> int:
         return suits[self.suit]
 
-    def is_dominant(self):
+    # return if card is dominant card
+    def is_dominant(self) -> bool:
         return True if self.rank_num() >= 12 or self.suit_num() == max(list(suits.values())) else False
-    
-
 
 class Deck:
-    cards = []
-
-    def __init__(self, decks):
+    def __init__(self, decks: int):
+        self.cards = []
         for _ in range(decks):
             for rank in ranks:
                 if rank != "JOKER":
@@ -80,36 +77,33 @@ class Deck:
             self.cards.append(Card("JOKER", "BLACK"))
             self.cards.append(Card("JOKER", "RED"))
     
-    def shuffle(self):
+    # shuffle deck in place
+    def shuffle(self) -> None:
         random.shuffle(self.cards)
 
-    def draw(self):
+    # draw card from deck and return it
+    def draw(self) -> Card:
         return self.cards.pop()
     
-    def isempty(self):
+    def isempty(self) -> bool:
         return not self.cards
 
-    # def sort(self):
-    #     special = [card for card in self.cards if card.rank_num() >= 12]
-    #     self.cards[:] = [card for card in self.cards if card.rank_num() < 12]
-    #     self.cards.sort(key=lambda x: (x.suit_num(), x.rank_num()))
-    #     special.sort(key=lambda x: (x.rank_num(), x.suit_num()))
-    #     self.cards.extend(special)
-
-    def print(self):
+    def print(self) -> None:
         for card in self.cards:
             print(card.file_name())
 
 
-def set_dominant(dom_suit):
+# shift suit order to set the dominant suit
+def set_dominant(dom_suit: str) -> None:
     suits[dom_suit] += 4
-    # adjust to make suit order alternate color
+    # keep suit order alternating colors
     if dom_suit == "SPADES":
         suits["CLUBS"] -= 2
     elif dom_suit == "DIAMONDS":
         suits["SPADES"] -= 2
 
-def tractor_sorted(cards):
+# return the cards in sorted order
+def tractor_sorted(cards: list[Card]) -> list[Card]:
     special = [card for card in cards if card.rank_num() >= 12]
     cards = [card for card in cards if card.rank_num() < 12]
     cards.sort(key=lambda x: (x.suit_num(), x.rank_num()))
@@ -120,8 +114,9 @@ def tractor_sorted(cards):
 
 # NOTE: lots of 4-player-only functionality here
 
+# return the type of play the cards are
 # -1 = bad play, 1 = single, 2 = pair, 3 = tractor
-def type_of(cards) -> int:
+def _type_of(cards: list[Card]) -> int:
     cards = tractor_sorted(cards)
     card_ranks = [ranks[card.rank] for card in cards]
     card_suits = [suits[card.suit] for card in cards]
@@ -149,14 +144,14 @@ def type_of(cards) -> int:
     return -1
 
 # returns the number of cards matching the suit
-def num_matching(checking, suit, is_dom):
+def _num_matching(checking: list[Card], suit: str, is_dom: bool) -> int:
     if is_dom:
         return len([card for card in checking if card.is_dominant()])
     else:
         return len([card for card in checking if card.suit == suit and not card.is_dominant()])
 
 # returns if the hand has a play of the given type 
-def has_type(type, suit, is_dom, hand):
+def _has_type(type: int, suit: str, is_dom: bool, hand: list[Card]) -> bool:
     if is_dom:
         of_suit = [card for card in hand if card.is_dominant()]
     else:
@@ -171,7 +166,7 @@ def has_type(type, suit, is_dom, hand):
             if of_suit[i].rank == of_suit[i+1].rank and of_suit[i].suit == of_suit[i+1].suit: # has a pair
                 if type == 2:
                     return True
-                elif type_of(of_suit[i:i+4]) == 3: # has a tractor
+                elif _type_of(of_suit[i:i+4]) == 3: # has a tractor
                     return True
     
     return False
@@ -190,28 +185,27 @@ VALID PLAY
 7. if num matching suit/dom in selected is same as min of length of starting and matching in hand -> True
 8. -> False
 """
-
 def valid_play(starting: list[Card], selected: list[Card], hand: list[Card]) -> Tuple[bool, str]:
     if not starting: # no starting play, this is first play 
-        return True if type_of(selected) != -1 else False
+        return True if _type_of(selected) != -1 else False
 
     if len(selected) != len(starting) or len(selected) == 0:
         return False
     
-    if type_of(selected) == type_of(starting) and ((selected[0].suit == starting[0].suit and not selected[0].is_dominant() and not starting[0].is_dominant()) or
+    if _type_of(selected) == _type_of(starting) and ((selected[0].suit == starting[0].suit and not selected[0].is_dominant() and not starting[0].is_dominant()) or
                                                    (selected[0].is_dominant() and starting[0].is_dominant())):
         return True
     
-    if has_type(type_of(starting), starting[0].suit, starting[0].is_dominant(), hand):
+    if _has_type(_type_of(starting), starting[0].suit, starting[0].is_dominant(), hand):
         return False
     
-    if type_of(selected) == 2 and type_of(starting) == 3 and ((selected[0].suit == starting[0].suit and not selected[0].is_dominant() and not starting[0].is_dominant()) or
+    if _type_of(selected) == 2 and _type_of(starting) == 3 and ((selected[0].suit == starting[0].suit and not selected[0].is_dominant() and not starting[0].is_dominant()) or
                                                               (selected[0].is_dominant() and starting[0].is_dominant())): # pair is fine for tractor
         return True
-    if has_type(2, starting[0].suit, starting[0].is_dominant(), hand): # need to play pair
+    if _has_type(2, starting[0].suit, starting[0].is_dominant(), hand): # need to play pair
         return False
     
-    if num_matching(selected, starting[0].suit, starting[0].is_dominant()) == min(len(starting), num_matching(hand, starting[0].suit, starting[0].is_dominant())):
+    if _num_matching(selected, starting[0].suit, starting[0].is_dominant()) == min(len(starting), _num_matching(hand, starting[0].suit, starting[0].is_dominant())):
         return True
 
     return False
@@ -229,12 +223,11 @@ IS BETTER
 7. if "playing" suit != "best" suit: -> True if "playing" suit is max or "playing" suit is 2
 8. -> false
 """
-
-def is_better(best, playing):
+def is_better(best: list[Card], playing: list[Card]) -> bool:
     if not best:
         return True
 
-    if type_of(best) > type_of(playing): # better type
+    if _type_of(best) > _type_of(playing): # better type
         return False
 
     if best[0].is_dominant() and not playing[0].is_dominant(): # dom > nondom
@@ -262,7 +255,3 @@ def is_better(best, playing):
 # TODO 
 # ----------
 # - tractors >4 cards
-# - remove getters
-# - remove class variables
-# - underscore any not-used functions
-# - type annotations
