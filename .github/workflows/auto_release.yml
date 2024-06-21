@@ -69,7 +69,7 @@ jobs:
 
       - name: (Temp) ls
         run:
-          ls
+          ls dist
 
       - name: Upload client
         uses: actions/upload-release-asset@v1
