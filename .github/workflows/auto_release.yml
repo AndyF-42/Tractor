@@ -67,10 +67,9 @@ jobs:
       - name: Build executable
         run: pyinstaller --name Tractor-${{ github.ref_name }}-mac.app --add-data "images:images" --onefile client.py
 
-      - name: (Temp) Tree
+      - name: (Temp) ls
         run:
-          tree -d
-          pwd
+          ls
 
       - name: Upload client
         uses: actions/upload-release-asset@v1
