@@ -4,7 +4,7 @@ Tractor, also known as [Sheng-Ji](https://en.wikipedia.org/wiki/Sheng_ji) is a p
 
 ## Playing
 
-To join a server, head over to the [releases](https://github.com/AndyF-42/Tractor/releases) page and download `client.exe` (Windows) or `client` (Mac) from the latest release.
+To join a server, head over to the [releases](https://github.com/AndyF-42/Tractor/releases) page and download the tractor executable for your architecture from the latest release.
 
 ## Author
 
