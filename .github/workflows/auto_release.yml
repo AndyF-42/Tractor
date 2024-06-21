@@ -62,14 +62,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements_mac.txt
-          brew install tree
 
       - name: Build executable
-        run: pyinstaller --name Tractor-${{ github.ref_name }}-mac.app --add-data "images:images" --onefile client.py
-
-      - name: (Temp) ls
-        run:
-          ls dist
+        run: pyinstaller --name Tractor-${{ github.ref_name }}-mac --add-data "images:images" --onefile client.py
 
       - name: Upload client
         uses: actions/upload-release-asset@v1
@@ -77,8 +72,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.setup_release.outputs.upload_url }}
-          asset_path: dist/Tractor-${{ github.ref_name }}-mac.app
-          asset_name: Tractor-${{ github.ref_name }}-mac.app
+          asset_path: dist/Tractor-${{ github.ref_name }}-mac
+          asset_name: Tractor-${{ github.ref_name }}-mac
           asset_content_type: application/octet-stream 
 
   
