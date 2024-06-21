@@ -114,8 +114,13 @@ def tractor_sorted(cards: list[Card]) -> list[Card]:
 
 # NOTE: lots of 4-player-only functionality here
 
+_types = {
+    -1: "bad play",
+    1: "single",
+    2: "pair",
+    3: "tractor"
+}
 # return the type of play the cards are
-# -1 = bad play, 1 = single, 2 = pair, 3 = tractor
 def _type_of(cards: list[Card]) -> int:
     cards = tractor_sorted(cards)
     card_ranks = [ranks[card.rank] for card in cards]
@@ -180,35 +185,35 @@ VALID PLAY
 4. if has same type of same suit (has type will account for if suit is dom or not) -> False
 ---TRACTOR SPECIAL---
 5. if selected type is pair and starting type is tractor and ((same suit and neither are dom) or (both dom)) -> True
-6. if has a pair of the right suit -> False
+6. if hand has a pair of the right suit and selected doesn't -> False
 ---------------------
 7. if num matching suit/dom in selected is same as min of length of starting and matching in hand -> True
 8. -> False
 """
 def valid_play(starting: list[Card], selected: list[Card], hand: list[Card]) -> Tuple[bool, str]:
     if not starting: # no starting play, this is first play 
-        return True if _type_of(selected) != -1 else False
+        return (True, "") if _type_of(selected) != -1 else (False, "Not a valid tractor play.")
 
     if len(selected) != len(starting) or len(selected) == 0:
-        return False
+        return False, "Must match the number of cards in the starting hand."
     
     if _type_of(selected) == _type_of(starting) and ((selected[0].suit == starting[0].suit and not selected[0].is_dominant() and not starting[0].is_dominant()) or
                                                    (selected[0].is_dominant() and starting[0].is_dominant())):
-        return True
+        return True, ""
     
     if _has_type(_type_of(starting), starting[0].suit, starting[0].is_dominant(), hand):
-        return False
+        return False, f"You have a{' dominant' if starting[0].is_dominant() else ''} {_types[_type_of(starting)]} that you must play."
     
     if _type_of(selected) == 2 and _type_of(starting) == 3 and ((selected[0].suit == starting[0].suit and not selected[0].is_dominant() and not starting[0].is_dominant()) or
                                                               (selected[0].is_dominant() and starting[0].is_dominant())): # pair is fine for tractor
-        return True
-    if _has_type(2, starting[0].suit, starting[0].is_dominant(), hand): # need to play pair
-        return False
+        return True, ""
+    if _has_type(2, starting[0].suit, starting[0].is_dominant(), hand) and not _has_type(2, starting[0].suit, starting[0].is_dominant(), selected): # need to play pair
+        return False, f"You have a{' dominant' if starting[0].is_dominant() else ''} pair that you must play because of the tractor."
     
     if _num_matching(selected, starting[0].suit, starting[0].is_dominant()) == min(len(starting), _num_matching(hand, starting[0].suit, starting[0].is_dominant())):
-        return True
+        return True, ""
 
-    return False
+    return False, f"You have more {'dominants' if starting[0].is_dominant() else starting[0].suit.lower()} to play."
      
 
 """

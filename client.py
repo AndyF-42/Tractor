@@ -351,7 +351,7 @@ class UI(QMainWindow):
             bad_play = QMessageBox()
             bad_play.setIcon(QMessageBox.Critical)
             bad_play.setWindowTitle("Invalid Play")
-            bad_play.setText(f"Invalid play: {response}")
+            bad_play.setText(response)
             bad_play.exec_()
         
     def score(self):
@@ -604,7 +604,6 @@ if __name__ == "__main__":
 # ----------
 # 1 - countercalling
 # 1 - play again
-# 2 - more descriptive than "invalid play"
 # 2 - check if nobody can call
 # 2 - ensure unique names
 # 3 - prettier UI (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc.)
