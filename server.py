@@ -70,7 +70,7 @@ class TractorServer(QTcpServer):
                 
         elif message == "draw":
             card = self.deck.draw()
-            client.write(("draw-" + card.get_rank() + "-" + card.get_suit()).encode('utf-8')) # e.g., "draw-THREE-CLUBS"
+            client.write(("draw-" + card.rank + "-" + card.suit).encode('utf-8')) # e.g., "draw-THREE-CLUBS"
             
             self.timer.singleShot(125, lambda: self.next_turn(client))
         
@@ -82,7 +82,7 @@ class TractorServer(QTcpServer):
                 if c != client: # send non-callers the info
                     c.write(("call-" + self.clients[client] + "-" + "-".join(message.split("-")[1:])).encode('utf-8'))
                 elif self.deck.isempty(): # if deck empty, send the pot to the caller
-                    c.write(("pot-" + str(len(self.pot)) + "-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.pot])).encode('utf-8'))
+                    c.write(("pot-" + str(len(self.pot)) + "-" + "-".join([card.rank + "-" + card.suit for card in self.pot])).encode('utf-8'))
             
         elif message.startswith("bury"):
             message = message.split("-")
@@ -98,7 +98,7 @@ class TractorServer(QTcpServer):
             cards = [Card(message[i], message[i+1]) for i in range(1, len(message), 2)]
 
             for card in cards:
-                self.potential_points += card.get_points()
+                self.potential_points += card.points
 
             if not self.starting_cards:
                 self.first_player = client
@@ -111,7 +111,7 @@ class TractorServer(QTcpServer):
             for c in self.clients:
                 if c != client:
                     c.write(("put-" + self.clients[client] + "-" + "-".join(message[1:]) +
-                        ("-STARTING-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.starting_cards])) + 
+                        ("-STARTING-" + "-".join([card.rank + "-" + card.suit for card in self.starting_cards])) + 
                         ("-GO" if c == list(self.clients)[(list(self.clients).index(client) + 1) % len(self.clients)] else "")).encode('utf-8'))
             
             if self.first_player == list(self.clients)[(list(self.clients).index(client) + 1) % len(self.clients)]: # made it all around
@@ -139,8 +139,8 @@ class TractorServer(QTcpServer):
         elif message.startswith("nocards"):
             self.pot_points = 0
             for card in self.pot:
-                self.pot_points += card.get_points()
-            client.write(("endpot-" + str(len(self.pot)) + "-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.pot])).encode('utf-8'))
+                self.pot_points += card.points
+            client.write(("endpot-" + str(len(self.pot)) + "-" + "-".join([card.rank + "-" + card.suit for card in self.pot])).encode('utf-8'))
          
          
     # --- TIMED FUNCTIONS --- #
@@ -154,7 +154,7 @@ class TractorServer(QTcpServer):
         if self.deck.isempty():
             for c in self.clients:
                 if c == self.caller:
-                    c.write(("pot-" + str(len(self.pot)) + "-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.pot])).encode('utf-8'))
+                    c.write(("pot-" + str(len(self.pot)) + "-" + "-".join([card.rank + "-" + card.suit for card in self.pot])).encode('utf-8'))
                 else:
                     c.write("dealover".encode('utf-8'))
         else:

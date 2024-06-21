@@ -264,7 +264,7 @@ class UI(QMainWindow):
     
     def check_team(self):
         for card in self.hand:
-            if card.get_rank() == "TEN" and card.get_suit() == self.dom_suit:
+            if card.rank == "TEN" and card.suit == self.dom_suit:
                 self.side = "defense"
                 team = QPixmap(resource_path("images/shield.png")).scaledToHeight(64)
                 self.team_img.setPixmap(team)
@@ -300,13 +300,13 @@ class UI(QMainWindow):
     
     def call(self):
         # error checking (need two cards: one ten and one joker)
-        if len(self.selected) == 2 and ((self.selected[0].get_rank() == "JOKER" and self.selected[1].get_rank() == "TEN") or
-                                        (self.selected[1].get_rank() == "JOKER" and self.selected[0].get_rank() == "TEN")):
-            self.client.write(("call-" + self.selected[0].get_rank() + "-" + self.selected[0].get_suit() +
-                                   "-" + self.selected[1].get_rank() + "-" + self.selected[1].get_suit()).encode('utf-8'))
+        if len(self.selected) == 2 and ((self.selected[0].rank == "JOKER" and self.selected[1].rank == "TEN") or
+                                        (self.selected[1].rank == "JOKER" and self.selected[0].rank == "TEN")):
+            self.client.write(("call-" + self.selected[0].rank + "-" + self.selected[0].suit +
+                                   "-" + self.selected[1].rank + "-" + self.selected[1].suit).encode('utf-8'))
             self.call_button.setVisible(False)
-            if self.selected[0].get_rank() == "TEN": self.dom_suit = self.selected[0].get_suit()
-            else: self.dom_suit = self.selected[1].get_suit()
+            if self.selected[0].rank == "TEN": self.dom_suit = self.selected[0].suit
+            else: self.dom_suit = self.selected[1].suit
             self.set_dom()
         else:
             bad_call = QMessageBox()
@@ -317,7 +317,7 @@ class UI(QMainWindow):
     
     def done(self):
         self.clear_pot()
-        self.client.write(("bury-" + str(len(self.pot)) + "-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.pot])).encode('utf-8'))
+        self.client.write(("bury-" + str(len(self.pot)) + "-" + "-".join([card.rank + "-" + card.suit for card in self.pot])).encode('utf-8'))
 
     def play(self):
         if not self.selected:
@@ -328,8 +328,9 @@ class UI(QMainWindow):
             bad_play.exec_()
             return     
 
-        if valid_play(self.starting_cards, self.selected, self.hand):
-            self.client.write(("play-" + "-".join([card.get_rank() + "-" + card.get_suit() for card in self.selected])).encode('utf-8'))
+        valid, response = valid_play(self.starting_cards, self.selected, self.hand)
+        if valid:
+            self.client.write(("play-" + "-".join([card.rank + "-" + card.suit for card in self.selected])).encode('utf-8'))
 
             # display cards and remove from hand
             self.show_cards(self.selected, 96, (350,300), 30)
@@ -350,7 +351,7 @@ class UI(QMainWindow):
             bad_play = QMessageBox()
             bad_play.setIcon(QMessageBox.Critical)
             bad_play.setWindowTitle("Invalid Play")
-            bad_play.setText("Invalid play!")
+            bad_play.setText(f"Invalid play: {response}")
             bad_play.exec_()
         
     def score(self):
@@ -601,14 +602,11 @@ if __name__ == "__main__":
 
 # TODO 
 # ----------
-# - Countercalling
-# - Prettier UI (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc.)
-# - Fix suit images
-# - Check if nobody can call
-# - ensure unique names
-# - f-string formatting
-# - GUI input for IP and port
-# - more descriptive than "invalid play"
-# - if no cards selected, play is greyed out
-# - override invalid play
-# - play again
+# 1 - countercalling
+# 1 - play again
+# 2 - more descriptive than "invalid play"
+# 2 - check if nobody can call
+# 2 - ensure unique names
+# 3 - prettier UI (either lock windows or make draggable, add colors and fonts, add more labels for explaining what happened, maybe add a help button, etc.)
+# 3 - fix suit images
+# 4 - f-string formatting
