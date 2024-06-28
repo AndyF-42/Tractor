@@ -1,6 +1,7 @@
 from game import Card, set_dominant, tractor_sorted, valid_play
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, QMessageBox, QLabel, QWidget, QFrame, QCheckBox
+from PyQt5.QtWidgets import (QMainWindow, QApplication, QPushButton, QLineEdit, QMessageBox,
+                             QLabel, QWidget, QFrame, QCheckBox, QFormLayout, QHBoxLayout, QVBoxLayout, QGridLayout)
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5 import QtGui
@@ -28,115 +29,93 @@ class UI(QMainWindow):
     def __init__(self, name=""):
         super(UI, self).__init__()
         
-        #--- PYQT5 CODE ---#
-        self.setWindowTitle("Tractor Client")
-        self.setGeometry(0, 0, 800, 648)
+        self.setWindowTitle("Tractor")
 
-        self.centralwidget = QWidget(self)
-        self.setCentralWidget(self.centralwidget)
+        # Font
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.setFont(font)
 
-        self.host_frame = QFrame(self.centralwidget)
-        self.host_frame.setGeometry(270, 80, 271, 102)
-        self.host_frame.setStyleSheet("background-color: rgb(185, 252, 255);")
+        # --- Connect Layout --- #
+        self.connect_frame = QFrame()
+        self.setCentralWidget(self.connect_frame)
+        connect_layout = QVBoxLayout(self.connect_frame)
+
+        self.form_frame = QFrame()
+        form_layout = QFormLayout(self.form_frame)
+        self.ip_entry = QLineEdit("127.0.0.1" if name else "")
+        self.name_entry = QLineEdit(name)
+        form_layout.addRow("IP:", self.ip_entry)
+        form_layout.addRow("Name:", self.name_entry)
+
+        self.host_connect = QPushButton("Connect")
+
+        connect_layout.addWidget(self.form_frame)
+        connect_layout.addWidget(self.host_connect)
+        # --- Connect Layout --- #
         
-        self.ip_label = QLabel("IP:", self.host_frame)
-        self.ip_label.setGeometry(10, 10, 101, 31)
-        self.ip_label.setFont(QtGui.QFont("Segoe UI Semilight", 14))
-
-        self.name_label = QLabel("Name:", self.host_frame)
-        self.name_label.setGeometry(10, 61, 101, 31)
-        self.name_label.setFont(QtGui.QFont("Segoe UI Semilight", 14))
-
-        self.ip_entry = QLineEdit("127.0.0.1" if name else "", self.host_frame)
-        self.ip_entry.setGeometry(80, 10, 101, 31)
-        self.ip_entry.setStyleSheet("background-color: rgb(255, 255, 255);")
+        # --- Main Layout --- #
+        self.main_frame = QFrame()
+        self.setCentralWidget(self.main_frame)
+        main_layout = QGridLayout(self.main_frame)
         
-        self.name_entry = QLineEdit(name, self.host_frame)
-        self.name_entry.setGeometry(80, 61, 101, 31)
-        self.name_entry.setStyleSheet("background-color: rgb(255, 255, 255);")
-
-        self.host_connect = QPushButton("Connect", self.host_frame)
-        self.host_connect.setGeometry(190, 36, 71, 31)
-        self.host_connect.setStyleSheet("background-color: rgb(255, 238, 175); font: 10pt 'Segoe UI Semilight';")
-
-        self.draw_button = QPushButton("DRAW", self.centralwidget)
-        self.draw_button.setGeometry(300, 200, 81, 71)
-
-        self.call_button = QPushButton("CALL", self.centralwidget)
-        self.call_button.setGeometry(400, 200, 81, 71)
-
-        self.sort_button = QPushButton("Sort", self.centralwidget)
-        self.sort_button.setGeometry(650, 310, 81, 23)
-
-        self.dom_img = QLabel("DomImg", self.centralwidget)
-        self.dom_img.setGeometry(40, 80, 51, 41)
+        # 0,0
+        self.info_frame = QFrame()
+        info_layout = QHBoxLayout(self.info_frame)
+        self.dom_img = QLabel("DomImg")
         self.dom_img.setStyleSheet("border: 1px solid black")
-
-        self.team_img = QLabel("TeamImg", self.centralwidget)
-        self.team_img.setGeometry(100, 80, 51, 41)
+        self.team_img = QLabel("TeamImg")
         self.team_img.setStyleSheet("border: 1px solid black")
-
-        self.title = QLabel("Tractor", self.centralwidget)
-        self.title.setGeometry(-20, 0, 831, 51)
-        self.title.setStyleSheet("background-color: rgb(0, 170, 255);")
-        self.title.setAlignment(Qt.AlignCenter)
-        self.title.setFont(QtGui.QFont("Arial", 24, QtGui.QFont.Bold))
-
-        # self.name_frame = QFrame(self.centralwidget)
-        # self.name_frame.setGeometry(270, 80, 271, 51)
-        # self.name_frame.setStyleSheet("background-color: rgb(185, 252, 255);")
-
-        # self.name_label = QLabel("Name:", self.name_frame)
-        # self.name_label.setGeometry(10, 10, 101, 31)
-        # self.name_label.setFont(QtGui.QFont("Segoe UI Semilight", 14))
-
-        # self.name_entry = QLineEdit(self.name_frame)
-        # self.name_entry.setGeometry(80, 10, 101, 31)
-        # self.name_entry.setStyleSheet("background-color: rgb(255, 255, 255);")
-
-        # self.name_submit = QPushButton("Submit", self.name_frame)
-        # self.name_submit.setGeometry(190, 10, 71, 31)
-        # self.name_submit.setStyleSheet("background-color: rgb(255, 238, 175); font: 10pt 'Segoe UI Semilight';")
-
-        self.sort_checkbox = QCheckBox("AutoSort", self.centralwidget)
-        self.sort_checkbox.setGeometry(660, 340, 70, 17)
+        self.points_label = QLabel("120/120")
+        info_layout.addWidget(self.dom_img)
+        info_layout.addWidget(self.team_img)
+        info_layout.addWidget(self.points_label)
+        
+        # 0,1
+        self.p2_label = QLabel("?")
+        self.p2_label.setAlignment(Qt.AlignCenter)
+        
+        # 0,2
+        self.sort_checkbox = QCheckBox("AutoSort")
         self.sort_checkbox.setChecked(True)
-
-        self.p2_label = QLabel("?", self.centralwidget)
-        self.p2_label.setGeometry(350, 70, 81, 31)
-        self.p2_label.setFont(QtGui.QFont("Arial", 10))
-
-        self.p3_label = QLabel("?", self.centralwidget)
-        self.p3_label.setGeometry(700, 200, 81, 31)
-        self.p3_label.setFont(QtGui.QFont("Arial", 10))
-
-        self.p1_label = QLabel("?", self.centralwidget)
-        self.p1_label.setGeometry(20, 200, 81, 31)
-        self.p1_label.setFont(QtGui.QFont("Arial", 10))
-
-        self.done_button = QPushButton("DONE", self.centralwidget)
-        self.done_button.setGeometry(350, 200, 81, 71)
-
-        self.play_button = QPushButton("PLAY", self.centralwidget)
-        self.play_button.setGeometry(350, 200, 81, 71)
-        self.play_button.setEnabled(False)
-
-        self.message_label = QLabel("", self.centralwidget)
-        self.message_label.setGeometry(290, 200, 200, 30)
+        
+        # 1,0 
+        self.p1_label = QLabel("?")
+        self.p1_label.setAlignment(Qt.AlignCenter)
+        
+        # 1,1
+        self.center_widget = QFrame()
+        
+        self.draw_button = QPushButton("DRAW") 
+        self.call_button = QPushButton("CALL")
+        self.sort_button = QPushButton() # Delete
+        self.done_button = QPushButton("DONE")
+        self.play_button = QPushButton("PLAY")
+        self.score_button = QPushButton("SCORE")
+        self.burn_button = QPushButton("BURN")
+ 
+        self.message_label = QLabel("")
         self.message_label.setStyleSheet("background-color: rgb(185, 252, 255); border: 1px solid black")
         self.message_label.setAlignment(Qt.AlignCenter)
-        self.message_label.setFont(QtGui.QFont("Arial", 12))
 
-        self.score_button = QPushButton("SCORE", self.centralwidget)
-        self.score_button.setGeometry(310, 230, 81, 71)
+        # 1,2
+        self.p3_label = QLabel("?")
+        self.p3_label.setAlignment(Qt.AlignCenter)
+        
+        # 2,0 - 2,2
+        self.cards_frame = QFrame()
+        
+        # set up main layout
+        main_layout.addWidget(self.info_frame, 0, 0)
+        main_layout.setAlignment(self.info_frame, Qt.AlignLeft)
+        main_layout.addWidget(self.p2_label, 0, 1)
+        main_layout.addWidget(self.sort_checkbox, 0, 2)
+        main_layout.setAlignment(self.sort_checkbox, Qt.AlignRight)
+        main_layout.addWidget(self.p1_label, 1, 0)
+        main_layout.addWidget(self.center_widget, 1, 1)
+        main_layout.addWidget(self.p3_label, 1, 2)
+        main_layout.addWidget(self.cards_frame, 2, 0, 1, 3)
 
-        self.burn_button = QPushButton("BURN", self.centralwidget)
-        self.burn_button.setGeometry(390, 230, 81, 71)
-
-        self.points_label = QLabel("120/120", self.centralwidget)
-        self.points_label.setGeometry(160, 80, 71, 41)
-        self.points_label.setFont(QtGui.QFont("Arial", 12))
-        self.points_label.setAlignment(Qt.AlignCenter)
         #--- PYQT5 CODE ---#
 
         self.opponents = {
@@ -161,29 +140,29 @@ class UI(QMainWindow):
         self.score_button.clicked.connect(self.score)
         self.burn_button.clicked.connect(self.burn)
 
-        self.p1_label.setVisible(False)
-        self.p2_label.setVisible(False)
-        self.p3_label.setVisible(False)
-        self.message_label.setVisible(False)
-        self.points_label.setVisible(False)
-        self.call_button.setVisible(False)
-        self.draw_button.setVisible(False)
-        self.done_button.setVisible(False)
-        self.sort_button.setVisible(False)
-        self.play_button.setVisible(False)
-        self.score_button.setVisible(False)
-        self.burn_button.setVisible(False)
-        self.sort_checkbox.setVisible(False)
-        self.dom_img.setVisible(False)
-        self.team_img.setVisible(False)
+        # self.p1_label.setVisible(False)
+        # self.p2_label.setVisible(False)
+        # self.p3_label.setVisible(False)
+        # self.message_label.setVisible(False)
+        # self.points_label.setVisible(False)
+        # self.call_button.setVisible(False)
+        # self.draw_button.setVisible(False)
+        # self.done_button.setVisible(False)
+        # self.sort_button.setVisible(False)
+        # self.play_button.setVisible(False)
+        # self.score_button.setVisible(False)
+        # self.burn_button.setVisible(False)
+        # self.sort_checkbox.setVisible(False)
+        # self.dom_img.setVisible(False)
+        # self.team_img.setVisible(False)
 
         self.card_map = {} # maps the card label to the Card object 
         self.hand_labels = [] 
-        self.p1_cards = [QLabel(self.centralwidget) for _ in range(4)]
-        self.p2_cards = [QLabel(self.centralwidget) for _ in range(4)]
-        self.p3_cards = [QLabel(self.centralwidget) for _ in range(4)]
-        self.my_cards = [QLabel(self.centralwidget) for _ in range(4)]
-        self.pot_cards = [QLabel(self.centralwidget) for _ in range(8)]
+        self.p1_cards = [QLabel() for _ in range(4)]
+        self.p2_cards = [QLabel() for _ in range(4)]
+        self.p3_cards = [QLabel() for _ in range(4)]
+        self.my_cards = [QLabel() for _ in range(4)]
+        self.pot_cards = [QLabel() for _ in range(8)]
         for c in self.pot_cards:
             c.mousePressEvent = partial(self.click, c)
 
@@ -403,7 +382,7 @@ class UI(QMainWindow):
         self.client.error.connect(self.on_error)
         self.client.connectToHost(self.address, self.port)
         
-        self.setWindowTitle("Tractor Client - " + self.your_name)
+        self.setWindowTitle("Tractor - " + self.your_name)
 
     def on_connected(self):
         print("Connected to server!")
@@ -430,7 +409,8 @@ class UI(QMainWindow):
             self.p1_label.setVisible(True)
             self.p2_label.setVisible(True)
             self.p3_label.setVisible(True)
-            self.title.setText("Waiting for players...")
+            self.message_label.setText("Waiting for players...")
+            self.message_label.setVisible(True)
             self.host_frame.setVisible(False)
         
         elif message.startswith("joined"): # joined-[my_index]-[newplayer_index]-[name] 
@@ -440,7 +420,7 @@ class UI(QMainWindow):
             getattr(self, "p"+str(index)+"_label").setText(parts[3])
 
         elif message.startswith("start"):
-            self.title.setText("Tractor - " + self.your_name)
+            self.message_label.setVisible(False)
 
             self.call_button.setVisible(True)
             self.draw_button.setVisible(True)
@@ -465,7 +445,7 @@ class UI(QMainWindow):
             message = message.split("-")
             self.hand.append(Card(message[1], message[2]))
 
-            label = QLabel(self.centralwidget)
+            label = QLabel(self.main_widget)
             label.mousePressEvent = partial(self.click, label)
             self.hand_labels.append(label)
             
